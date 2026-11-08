@@ -3,17 +3,16 @@
  * (the orthographic camera is set up so 1 world unit = 1 CSS px).
  */
 export const GLOBE = {
-  // One tile (thumbnail) on the sphere surface.
+  // Unit cell inside each project frame (clusters are always 3×2 of these).
   tileW: 118,
   tileH: 80,
   tileGap: 6,
 
-  // A project = a cluster of tiles, laid out clusterCols × clusterRows.
+  // Atlas packs this many cells per project (layout maps a subset into the frame).
   clusterCols: 3,
   clusterRows: 2,
 
-  // The cluster grid wrapped around the sphere. gridCols × pitchX is the
-  // circumference, which is what sets the (unscaled) sphere radius.
+  // Regular sphere grid — equal spacing between same-sized project frames.
   gridCols: 10,
   gridRows: 5,
   pitchX: 500,
@@ -21,33 +20,25 @@ export const GLOBE = {
   staggerOddRows: true,
 
   // On screen, the sphere is scaled so its radius = min(radiusVw × width, radiusVh × height).
-  // 0.55 × width puts the silhouette just outside the viewport edges, so edge tiles
-  // are strongly foreshortened; the height cap keeps the top "horizon" in view on
-  // wide screens.
   radiusVw: 0.55,
   radiusVh: 0.95,
   scaleMin: 0.7,
   scaleMax: 2.5,
 
-  // Lattice ("netting") spacing in degrees, and how far toward the poles it runs.
   latticeStepDeg: 10,
   latticeLatLimitDeg: 86,
 
-  // Camera: how far above the sphere's equator the viewport centre sits,
-  // as a fraction of R. Larger = more of the top "horizon" compression.
   panDefault: 0.4,
   panMin: 0.1,
   panMax: 0.6,
 
-  // Motion.
-  driftRadPerSec: 0.03, // idle auto-spin
-  idleDelayMs: 900, // how long after the last input before drift resumes
-  wheelSens: 0.0014, // radians of longitude per wheel px
-  dragSens: 0.0021, // radians of longitude per dragged px
-  panDragSens: 1.0, // world px of vertical pan per dragged px
-  damping: 6, // higher = snappier follow
+  driftRadPerSec: 0.03,
+  idleDelayMs: 900,
+  wheelSens: 0.0014,
+  dragSens: 0.0021,
+  panDragSens: 1.0,
+  damping: 6,
 
-  // Colours.
   bg: '#181616',
   cream: '#fffddb',
   red: '#ff3831',

@@ -1,16 +1,21 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Canvas } from '@react-three/fiber'
-import { buildAtlas } from '../globe/atlas'
+import { buildAtlas, type Atlas } from '../globe/atlas'
 import { GLOBE, R } from '../globe/config'
 import { GlobeScene, type Readout } from '../globe/GlobeScene'
 import { buildLayout } from '../globe/layout'
 import { PROJECTS } from '../globe/projects'
+import { useBasePath } from '../hooks/useBasePath'
 import styles from './HomeGlobe.module.css'
 
 /** Interactive globe only — no Studio Labs chrome. */
 export function HomeGlobe() {
   const host = useRef<HTMLDivElement>(null)
   const [ready, setReady] = useState(false)
+  const [atlas, setAtlas] = useState<Atlas | null>(null)
+  const navigate = useNavigate()
+  const base = useBasePath()
 
   // Wait until the slot has real layout size (loader / artboard scale can
   // leave R3F stuck on the default 300×150 canvas).
@@ -27,7 +32,6 @@ export function HomeGlobe() {
     const ro = new ResizeObserver(check)
     ro.observe(el)
     window.addEventListener('resize', check)
-    // Re-check after boot loader clears visibility
     const t = window.setTimeout(check, 200)
     const t2 = window.setTimeout(check, 800)
     return () => {
@@ -38,8 +42,18 @@ export function HomeGlobe() {
     }
   }, [])
 
+  // Build the atlas in an effect so React Strict Mode dispose/remount gets a
+  // fresh set of <video> elements (useMemo would reuse a disposed atlas).
+  useEffect(() => {
+    const next = buildAtlas(PROJECTS)
+    setAtlas(next)
+    return () => {
+      next.dispose()
+      setAtlas(null)
+    }
+  }, [])
+
   const layout = useMemo(() => buildLayout(PROJECTS.length), [])
-  const atlas = useMemo(() => buildAtlas(PROJECTS), [])
   const [hovered, setHovered] = useState<number | null>(null)
 
   const tooltip = useRef<HTMLDivElement>(null)
@@ -63,9 +77,14 @@ export function HomeGlobe() {
     [layout],
   )
 
-  const onSelect = useCallback(() => {
-    /* Selection overlay omitted on the home embed. */
-  }, [])
+  const onSelect = useCallback(
+    (clusterIndex: number) => {
+      const project = PROJECTS[layout.clusters[clusterIndex].projectIndex]
+      if (!project) return
+      navigate(`${base}/projects/${project.slug}`)
+    },
+    [layout, navigate, base],
+  )
 
   const onReadout = useCallback((r: Readout) => {
     if (leftReadout.current) leftReadout.current.textContent = r.left.toFixed(6)
@@ -73,8 +92,12 @@ export function HomeGlobe() {
   }, [])
 
   return (
-    <div ref={host} className={styles.stage}>
-      {ready ? (
+    <div
+      ref={host}
+      className={styles.stage}
+      style={{ cursor: hovered !== null ? 'pointer' : 'grab' }}
+    >
+      {ready && atlas ? (
         <Canvas
           orthographic
           dpr={[1, 1.75]}

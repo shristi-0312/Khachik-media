@@ -12,6 +12,29 @@
   overflow: hidden;
 }
 
+.fillVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+
+.heroScrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(234, 20, 20, 0.28) 0%,
+    rgba(0, 0, 0, 0.18) 55%,
+    rgba(0, 0, 0, 0.35) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
 .back {
   position: absolute;
   left: 28px;
@@ -32,7 +55,7 @@
   white-space: nowrap;
   text-box-trim: trim-both;
   text-box-edge: cap alphabetic;
-  z-index: 2;
+  z-index: 3;
 }
 
 .play {
@@ -48,6 +71,8 @@
   align-items: center;
   justify-content: center;
   padding: 10px 10px 10px 14px;
+  z-index: 2;
+  pointer-events: none;
 }
 
 /* Figma up-next play: left calc(50% + 0.5px) */
@@ -143,6 +168,11 @@
   overflow: hidden;
 }
 
+.media .fillVideo,
+.mediaTall .fillVideo {
+  z-index: 0;
+}
+
 .full {
   width: 1414px;
   height: 795px;
@@ -164,9 +194,11 @@
 }
 
 .mediaTall {
+  position: relative;
   width: 463px;
   height: 700px;
   background: #ea1414;
+  overflow: hidden;
 }
 
 /* Triple ends 3535; divider y=3635 → 100px; up-next y=3685 → +50px;

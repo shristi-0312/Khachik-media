@@ -148,3 +148,24 @@ export function getNextProject(slug: string) {
   if (i < 0) return PROJECTS[0]
   return PROJECTS[(i + 1) % PROJECTS.length]
 }
+
+/** Compact looping reels painted onto the home globe tiles. */
+export const MEDIA_REELS = [
+  '/media/small/reel-1.mp4',
+  '/media/small/reel-2.mp4',
+  '/media/small/reel-3.mp4',
+  '/media/small/reel-4.mp4',
+  '/media/small/reel-5.mp4',
+  '/media/small/reel-6.mp4',
+  '/media/small/reel-7.mp4',
+  '/media/small/reel-8.mp4',
+  '/media/small/reel-9.mp4',
+  '/media/small/reel-10.mp4',
+  '/media/small/reel-11.mp4',
+  '/media/small/reel-12.mp4',
+  '/media/small/reel-13.mp4',
+  '/media/small/reel-14.mp4',
+] as const
+
+/** Higher-quality reel kept only for the Swiggy project detail page. */
+export const DETAIL_REEL = '/media/reel-1.mp4'

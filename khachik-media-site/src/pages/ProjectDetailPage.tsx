@@ -1,20 +1,43 @@
 import { Link, useParams } from 'react-router-dom'
 import { Artboard } from '../components/Artboard'
 import { Footer } from '../components/Footer'
-import { getNextProject, getProject } from '../data/content'
+import { DETAIL_REEL, getNextProject, getProject } from '../data/content'
 import { useBasePath } from '../hooks/useBasePath'
 import styles from './ProjectDetailPage.module.css'
+
+/** Only Swiggy keeps a video on the project page; the rest of the reels live on the globe. */
+const DETAIL_VIDEO_SLUG = 'swiggy-nights'
+
+function LoopingVideo({ src, className }: { src: string; className?: string }) {
+  return (
+    <video
+      className={className}
+      src={src}
+      autoPlay
+      muted
+      loop
+      playsInline
+      preload="metadata"
+      aria-hidden="true"
+    />
+  )
+}
 
 export function ProjectDetailPage() {
   const { slug = '' } = useParams()
   const base = useBasePath()
   const project = getProject(slug) ?? getProject('bluorng-x-playboy')!
   const next = getNextProject(project.slug)
+  const showDetailVideo = project.slug === DETAIL_VIDEO_SLUG
 
   return (
     <Artboard>
       <div className={styles.page}>
         <section className={styles.hero}>
+          {showDetailVideo ? (
+            <LoopingVideo src={DETAIL_REEL} className={styles.fillVideo} />
+          ) : null}
+          {showDetailVideo ? <div className={styles.heroScrim} aria-hidden="true" /> : null}
           <Link to={`${base}/projects`} className={styles.back}>
             <img src="/assets/chevron-left-white.svg" alt="" width={6} height={11} />
             <span>Back</span>

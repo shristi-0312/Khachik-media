@@ -151,6 +151,8 @@ export function GlobeScene({
 
   /* ---------------------------------- frame --------------------------------- */
   useFrame((_, dtRaw) => {
+    atlas.tick()
+
     const dt = Math.min(dtRaw, 0.05)
     const s = spin.current
     const idle = !s.dragging && performance.now() - s.lastInput > GLOBE.idleDelayMs

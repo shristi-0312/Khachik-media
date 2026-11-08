@@ -1,71 +1,99 @@
+import {
+  MEDIA_REELS,
+  PROJECTS as SITE_PROJECTS,
+  type Category,
+} from '../data/content'
+import { boardTiles } from './layout'
+
 export interface Project {
   slug: string
   name: string
   category: string
   tagline: string
-  /** Optional real thumbnails (6 per project). When omitted, placeholder art is generated. */
-  images?: string[]
-  /** Optional palette override: [background, foreground, accent]. */
+  /** Photo stills by tile index. */
+  images?: Partial<Record<number, string>>
+  /** Looping clips by tile index. */
+  videos?: Partial<Record<number, string>>
+  /** Real width / height of each tile on the sphere, so atlas art isn't stretched. */
+  aspects?: Partial<Record<number, number>>
   palette?: [string, string, string]
+  /** Seed for which graphic variants appear inside this board. */
+  artSeed: number
 }
 
-export const PALETTES: [string, string, string][] = [
-  ['#1b1a2e', '#fffddb', '#ff3831'],
-  ['#f5e6c8', '#1a1a1a', '#e5533d'],
-  ['#0d3b2e', '#e9f5e1', '#8ee04a'],
-  ['#ffd23f', '#1a1a1a', '#1f4bd8'],
-  ['#2a1b3d', '#f3e9ff', '#c084fc'],
-  ['#0b2545', '#eef4ff', '#5dd9ff'],
-  ['#ff5c39', '#fff5ea', '#1a1a1a'],
-  ['#efe9e1', '#2b2b2b', '#b84a2a'],
-  ['#101010', '#f2f2f2', '#ffd23f'],
-  ['#143d59', '#f4f6f8', '#f2b134'],
-  ['#e8f0e1', '#1f3b22', '#f26b3a'],
-  ['#2b2b2b', '#fffddb', '#67e8f9'],
-]
+function hsl(h: number, s: number, l: number) {
+  return `hsl(${((h % 360) + 360) % 360} ${s}% ${l}%)`
+}
 
-export const PROJECTS: Project[] = [
-  { slug: 'stackline', name: 'Stackline', category: 'SaaS', tagline: 'Documents that file themselves.' },
-  { slug: 'postbird', name: 'Postbird', category: 'B2C', tagline: 'Mail, minus the mailroom.' },
-  { slug: 'velo', name: 'Velo Ops', category: 'Outsourcing', tagline: 'Teams on demand.' },
-  { slug: 'rootfinder', name: 'Rootfinder', category: 'B2C', tagline: 'A retirement roadmap for everyone.' },
-  { slug: 'minnow', name: 'Minnow', category: 'A.I.', tagline: 'Do what moves you.' },
-  { slug: 'upcart', name: 'Upcart', category: 'SaaS', tagline: 'Retail intelligence.' },
-  { slug: 'inrev', name: 'In Revenue', category: 'Venture Capital', tagline: 'Capital that compounds.' },
-  { slug: 'prosupp', name: 'Pro Supply', category: 'E-Commerce', tagline: 'Hyde Xtreme.' },
-  { slug: 'engen', name: 'New Engine', category: 'Marketing', tagline: 'Growth, engineered.' },
-  { slug: 'welch', name: 'S. Welch', category: 'Education', tagline: 'Become you.' },
-  { slug: 'everest', name: 'Everest ERP', category: 'SaaS', tagline: 'Run the whole mountain.' },
-  { slug: 'elevate', name: 'Elevate', category: 'Home Warranty', tagline: 'Protection, lifted.' },
-  { slug: 'pathways', name: 'Five Pathways', category: 'Finance', tagline: 'Five ways forward.' },
-  { slug: 'vandough', name: 'Van Dough', category: 'Art', tagline: 'Collected, not created.' },
-  { slug: 'armadillo', name: 'Armadillo', category: 'Home Warranty', tagline: 'Hard shell, soft landing.' },
-  { slug: 'happyface', name: 'HappyFace', category: 'E-Commerce', tagline: 'Smile, shipped.' },
-  { slug: 'dogelon', name: 'Dogelon', category: 'Blockchain', tagline: 'To Mars.' },
-  { slug: 'dashq', name: 'DashQ', category: 'SaaS', tagline: 'Leasing, in a dash.' },
-  { slug: 'mew', name: 'Mew', category: 'Blockchain', tagline: 'Cat coin.' },
-  { slug: 'handwrit', name: 'Handwrit', category: 'B2C', tagline: 'Robots that write by hand.' },
-  { slug: 'brainsave', name: 'Brainsave', category: 'A.I.', tagline: 'Remember everything.' },
-  { slug: 'clydel', name: 'Cly-Del', category: 'Manufacturing', tagline: 'Precision since 1939.' },
-  { slug: 'barrow', name: 'Barrow Street', category: 'Education', tagline: 'Where curiosity starts.' },
-  { slug: 'hugo', name: 'Hugo', category: 'Outsourcing', tagline: 'Support, humanised.' },
-  { slug: 'altgage', name: 'Altgage', category: 'Real Estate', tagline: 'Mortgage on your terms.' },
-  { slug: 'openhome', name: 'Open Home', category: 'A.I.', tagline: 'Your house, listening.' },
-  { slug: 'portal', name: 'Portal', category: 'Blockchain', tagline: 'Bridge hits 65k users.' },
-  { slug: 'shardeum', name: 'Shardeum', category: 'Blockchain', tagline: 'Infinitely scalable.' },
-  { slug: 'mindjoin', name: 'MindJoin', category: 'B2B', tagline: 'Minds, joined.' },
-  { slug: 'saffron', name: 'Saffron', category: 'Venture Capital', tagline: 'Rare, valuable.' },
-  { slug: 'ultrared', name: 'Ultra Red', category: 'Cyber Security', tagline: 'See what attackers see.' },
-  { slug: 'flatiron', name: 'Flatiron Sports', category: 'Venture Capital', tagline: 'Game on.' },
-  { slug: 'fountain', name: 'Fountain', category: 'Healthcare', tagline: 'Care that flows.' },
-  { slug: 'geneva', name: 'Geneva Med', category: 'Healthcare', tagline: 'Precision medicine.' },
-]
+/** Unique colour identity per board — no short looping palette. */
+export function paletteFor(i: number): [string, string, string] {
+  const hue = (i * 47 + 13) % 360
+  switch (i % 5) {
+    case 0:
+      return [hsl(hue, 42, 14), hsl(hue, 20, 94), hsl(hue + 40, 85, 55)]
+    case 1:
+      return [hsl(hue, 45, 88), hsl(hue, 30, 12), hsl(hue + 180, 70, 45)]
+    case 2:
+      return [hsl(hue, 78, 52), hsl(hue, 15, 98), hsl(hue + 200, 20, 10)]
+    case 3:
+      return ['#101010', '#f4f2ea', hsl(hue + 30, 90, 55)]
+    default:
+      return [hsl(hue, 25, 90), hsl(hue, 35, 14), hsl(hue + 25, 82, 48)]
+  }
+}
 
-export const TICKER_ITEMS = [
-  'Portal bridge hits 65k users',
-  'Minnow raises $47 million in Series B',
-  'Everest ERP launches v3',
-  'Stackline named top SaaS of the year',
-  'Ultra Red expands to EMEA',
-  'DashQ partners with 200 property groups',
-]
+export const PALETTES: [string, string, string][] = Array.from({ length: 48 }, (_, i) => paletteFor(i))
+
+export { MEDIA_REELS }
+
+const GLOBE_REELS = MEDIA_REELS
+const STILL_COUNT = MEDIA_REELS.length * 3
+const stillSrc = (n: number) => `/media/stills/still-${(n % STILL_COUNT) + 1}.jpg`
+
+const CATEGORY_LABEL: Record<Category, string> = {
+  promotional: 'Promotional',
+  corporate: 'Corporate',
+  advertisements: 'Ads',
+  'short-forms': 'Short-form',
+}
+
+/** Matches the sphere grid (gridCols × gridRows) so board i is project i. */
+const GLOBE_COUNT = 50
+
+export const PROJECTS: Project[] = Array.from({ length: GLOBE_COUNT }, (_, i) => {
+  const site = SITE_PROJECTS[i % SITE_PROJECTS.length]
+  const tiles = boardTiles(i)
+  const n = GLOBE_REELS.length
+
+  const videos: Partial<Record<number, string>> = {}
+  const images: Partial<Record<number, string>> = {}
+  const aspects: Partial<Record<number, number>> = {}
+  for (const t of tiles) aspects[t.tileIndex] = t.aspect
+
+  // Biggest tile always moves; small boards (3 tiles) get one clip, others two.
+  const clipCount = tiles.length <= 3 ? 1 : 2
+  tiles.slice(0, clipCount).forEach((t, k) => {
+    videos[t.tileIndex] = GLOBE_REELS[(i * 5 + k * 7) % n]
+  })
+  // Next one or two tiles get photo stills; the rest stay graphic.
+  const photoCount = tiles.length >= 5 ? 2 : 1
+  tiles.slice(clipCount, clipCount + photoCount).forEach((t, k) => {
+    images[t.tileIndex] = stillSrc(i * 11 + k * 17)
+  })
+
+  return {
+    slug: site.slug,
+    name: site.title,
+    category: CATEGORY_LABEL[site.category],
+    tagline: site.service,
+    palette: paletteFor(i),
+    artSeed: (i * 2654435761) >>> 0,
+    videos,
+    images,
+    aspects,
+  }
+})
+
+export const TICKER_ITEMS = SITE_PROJECTS.map(
+  (p) => `${p.title} — ${p.client}`,
+)
