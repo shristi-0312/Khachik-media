@@ -4,5 +4,7 @@
 }
 
 .app-shell.booting {
-  visibility: hidden;
+  /* Keep layout measurable for WebGL; only hide visually during loader */
+  opacity: 0;
+  pointer-events: none;
 }

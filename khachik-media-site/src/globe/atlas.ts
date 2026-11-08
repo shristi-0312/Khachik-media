@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { PALETTES, type Project } from '../data/projects'
+import { PALETTES, type Project } from './projects'
 import { GLOBE } from './config'
 
 export interface UvRect {

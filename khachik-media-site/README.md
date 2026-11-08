@@ -1,39 +1,30 @@
 # Khachik Media Site
 
-Pixel-oriented React + Vite rebuild of the **newer (right-side)** Figma frames for Khachik Media.
+React + Vite implementation of the Khachik Media portfolio (Figma artboard **1470px**).
 
 ## Run
 
 ```bash
-cd khachik-media-site
 npm install
 npm run dev
 ```
 
-Open the local URL Vite prints (e.g. `http://127.0.0.1:5180`).
-
 ## Routes
 
-**Light (white)**
-- `/` — Loader → Home (globe slot is a placeholder; `griflan-globe-section` is not wired)
-- `/projects` — Category filters + horizontal / vertical layout toggle
+**Light**
+- `/` — Home + interactive projects globe
+- `/projects` — Filters + horizontal / vertical layout
 - `/projects/:slug` — Project detail
-- `/about` — About
+- `/about`
 
-**Dark showcase** (same layout, Figma dark colors — no toggle UI)
-- `/dark`
-- `/dark/projects`
-- `/dark/projects/:slug`
-- `/dark/about`
-
-**Start a project** — Contact modal (UI only)
+**Dark showcase** (same layout, dark tokens — no toggle)
+- `/dark`, `/dark/projects`, `/dark/projects/:slug`, `/dark/about`
 
 ## Fonts
 
-Figma uses **Larsseit** + **Paper Mono**. Self-hosted stand-ins are aliased to those family names in [`src/styles/fonts.css`](src/styles/fonts.css) (Satoshi → Larsseit, IBM Plex Mono → Paper Mono). To use the real licensed fonts, replace the files in `public/fonts/` and keep the same `@font-face` family names.
+Figma: **Larsseit** + **Paper Mono**. Self-hosted stand-ins in `public/fonts/` are aliased in `src/styles/fonts.css` (Satoshi → Larsseit, IBM Plex Mono → Paper Mono).
 
 ## Notes
 
-- Artboard is **1470px**, soft-scaled to fit smaller viewports.
-- Brand red: `#ea1414`
-- Do not edit `../griflan-globe-section`
+- Brand red: `#ea1414` / deep `#b90000`
+- Globe sources live under `src/globe/` (embedded on Home only)

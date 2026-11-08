@@ -1,6 +1,5 @@
 .page {
   width: 1470px;
-  min-height: 2671px;
   background: var(--color-page);
 }
 
@@ -110,14 +109,21 @@
   position: relative;
   width: 100%;
   height: 900px;
-  background: var(--color-page);
+  background: #181616;
   overflow: hidden;
+}
+
+.globeFallback {
+  position: absolute;
+  inset: 0;
+  background: #181616;
 }
 
 .viewAll {
   position: absolute;
   left: 660px;
   top: 826px;
+  z-index: 3;
   width: 150px;
   height: 32px;
   background: var(--color-red);

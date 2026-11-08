@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { GLOBE, R } from './config'
@@ -22,6 +22,11 @@ export interface GlobeSceneProps {
   onReadout?: (r: Readout) => void
   /** When true (an overlay is open) input is ignored and the globe just drifts. */
   frozen?: boolean
+  /**
+   * When true (home embed), vertical wheel scrolls the page instead of spinning
+   * the globe. Drag still rotates; horizontal trackpad swipe still spins.
+   */
+  allowPageScroll?: boolean
 }
 
 interface SpinState {
@@ -38,7 +43,16 @@ interface SpinState {
   lastY: number
 }
 
-export function GlobeScene({ layout, atlas, hoveredCluster, onHover, onSelect, onReadout, frozen }: GlobeSceneProps) {
+export function GlobeScene({
+  layout,
+  atlas,
+  hoveredCluster,
+  onHover,
+  onSelect,
+  onReadout,
+  frozen,
+  allowPageScroll = false,
+}: GlobeSceneProps) {
   const group = useRef<THREE.Group>(null)
   const { gl, camera, size } = useThree()
 
@@ -57,6 +71,8 @@ export function GlobeScene({ layout, atlas, hoveredCluster, onHover, onSelect, o
 
   const frozenRef = useRef(!!frozen)
   frozenRef.current = !!frozen
+  const pageScrollRef = useRef(allowPageScroll)
+  pageScrollRef.current = allowPageScroll
 
   /* ---------------------------------- input --------------------------------- */
   useEffect(() => {
@@ -65,6 +81,16 @@ export function GlobeScene({ layout, atlas, hoveredCluster, onHover, onSelect, o
 
     const onWheel = (e: WheelEvent) => {
       if (frozenRef.current) return
+
+      // Home embed: let vertical wheel scroll the page; only horizontal spins.
+      if (pageScrollRef.current) {
+        if (Math.abs(e.deltaY) >= Math.abs(e.deltaX)) return
+        e.preventDefault()
+        s.tLon -= e.deltaX * GLOBE.wheelSens
+        s.lastInput = performance.now()
+        return
+      }
+
       e.preventDefault()
       const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
       s.tLon -= d * GLOBE.wheelSens
@@ -90,11 +116,15 @@ export function GlobeScene({ layout, atlas, hoveredCluster, onHover, onSelect, o
       s.lastX = e.clientX
       s.lastY = e.clientY
       s.tLon += dx * GLOBE.dragSens
-      s.tPan = THREE.MathUtils.clamp(
-        s.tPan + (dy * GLOBE.panDragSens) / s.scale,
-        GLOBE.panMin * R,
-        GLOBE.panMax * R,
-      )
+      // On the home page, ignore vertical drag-pan so a slight drag while
+      // scrolling doesn't fight the page.
+      if (!pageScrollRef.current) {
+        s.tPan = THREE.MathUtils.clamp(
+          s.tPan + (dy * GLOBE.panDragSens) / s.scale,
+          GLOBE.panMin * R,
+          GLOBE.panMax * R,
+        )
+      }
       s.lastInput = performance.now()
     }
     const onUp = (e: PointerEvent) => {
@@ -199,8 +229,8 @@ interface TileProps {
   hover: boolean
   onHover: GlobeSceneProps['onHover']
   onSelect: GlobeSceneProps['onSelect']
-  spin: React.MutableRefObject<SpinState>
-  frozenRef: React.MutableRefObject<boolean>
+  spin: MutableRefObject<SpinState>
+  frozenRef: MutableRefObject<boolean>
 }
 
 function Tile({ slot, atlas, dim, hover, onHover, onSelect, spin, frozenRef }: TileProps) {
