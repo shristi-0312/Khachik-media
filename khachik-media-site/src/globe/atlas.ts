@@ -140,9 +140,10 @@ export function buildAtlas(projects: Project[]): Atlas {
   texture.colorSpace = THREE.SRGBColorSpace
   texture.needsUpdate = true
 
-  // Photo stills, cropped to each tile's aspect.
+  // Photo stills, cropped + washed into the board's hue family.
   projects.forEach((project, pi) => {
     if (!project.images) return
+    const [matte, , accent] = project.palette ?? PALETTES[pi % PALETTES.length]!
     for (const [tileKey, src] of Object.entries(project.images)) {
       const ti = Number(tileKey)
       if (!src || ti < 0 || ti >= tilesPerProject) continue
@@ -150,6 +151,7 @@ export function buildAtlas(projects: Project[]): Atlas {
       img.onload = () => {
         const { x, y } = cellOrigin(pi, ti)
         drawCoverAspect(ctx, img, img.naturalWidth, img.naturalHeight, x, y, aspectOf(project, ti))
+        washCell(ctx, x, y, matte, accent)
         texture.needsUpdate = true
       }
       img.src = src
@@ -212,8 +214,9 @@ export function buildAtlas(projects: Project[]): Atlas {
       let dirty = false
       for (const { video, cells } of videoBindings) {
         if (video.readyState < 2 || !video.videoWidth) continue
-        for (const { x, y, aspect } of cells) {
+        for (const { x, y, matte, accent, aspect } of cells) {
           drawCoverAspect(ctx, video, video.videoWidth, video.videoHeight, x, y, aspect)
+          washCell(ctx, x, y, matte, accent)
         }
         dirty = true
       }
@@ -249,6 +252,29 @@ function drawCoverAspect(
     sw = mh * aspect
   }
   ctx.drawImage(media, (mw - sw) / 2, (mh - sh) / 2, sw, sh, x, y, CELL_W, CELL_H)
+}
+
+/** Pull footage into the board palette — keep luminance, replace hue/sat. */
+function washCell(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  matte: string,
+  accent: string,
+) {
+  ctx.save()
+  ctx.beginPath()
+  ctx.rect(x, y, CELL_W, CELL_H)
+  ctx.clip()
+  ctx.globalCompositeOperation = 'color'
+  ctx.globalAlpha = 0.62
+  ctx.fillStyle = accent
+  ctx.fillRect(x, y, CELL_W, CELL_H)
+  ctx.globalCompositeOperation = 'source-over'
+  ctx.globalAlpha = 0.18
+  ctx.fillStyle = matte
+  ctx.fillRect(x, y, CELL_W, CELL_H)
+  ctx.restore()
 }
 
 /* ------------------------------------------------------------------------ */

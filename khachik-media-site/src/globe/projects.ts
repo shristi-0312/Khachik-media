@@ -25,20 +25,32 @@ function hsl(h: number, s: number, l: number) {
   return `hsl(${((h % 360) + 360) % 360} ${s}% ${l}%)`
 }
 
-/** Unique colour identity per board — no short looping palette. */
+/**
+ * Section hues — analogous only (no complementary accents).
+ * Neighbours on the sphere land on different families so boards read as
+ * teal / red / amber / green / cobalt / coral / plum / olive blocks.
+ */
+const HUE_FAMILIES = [
+  178, // teal
+  6, // red
+  44, // amber / yellow
+  148, // green
+  214, // cobalt
+  18, // coral
+  292, // plum
+  78, // olive
+] as const
+
+/** One cohesive [bg, fg, accent] per board, all in the same hue family. */
 export function paletteFor(i: number): [string, string, string] {
-  const hue = (i * 47 + 13) % 360
-  switch (i % 5) {
-    case 0:
-      return [hsl(hue, 42, 14), hsl(hue, 20, 94), hsl(hue + 40, 85, 55)]
-    case 1:
-      return [hsl(hue, 45, 88), hsl(hue, 30, 12), hsl(hue + 180, 70, 45)]
-    case 2:
-      return [hsl(hue, 78, 52), hsl(hue, 15, 98), hsl(hue + 200, 20, 10)]
-    case 3:
-      return ['#101010', '#f4f2ea', hsl(hue + 30, 90, 55)]
-    default:
-      return [hsl(hue, 25, 90), hsl(hue, 35, 14), hsl(hue + 25, 82, 48)]
+  const hue = HUE_FAMILIES[i % HUE_FAMILIES.length]! + ((i * 3) % 9) - 4
+  switch (Math.floor(i / HUE_FAMILIES.length) % 3) {
+    case 0: // dark field
+      return [hsl(hue, 36, 11), hsl(hue, 14, 96), hsl(hue, 62, 48)]
+    case 1: // light field
+      return [hsl(hue, 26, 93), hsl(hue, 38, 14), hsl(hue, 58, 42)]
+    default: // accent field
+      return [hsl(hue, 58, 44), hsl(hue, 18, 98), hsl(hue, 32, 12)]
   }
 }
 
@@ -46,9 +58,41 @@ export const PALETTES: [string, string, string][] = Array.from({ length: 48 }, (
 
 export { MEDIA_REELS }
 
-const GLOBE_REELS = MEDIA_REELS
-const STILL_COUNT = MEDIA_REELS.length * 3
-const stillSrc = (n: number) => `/media/stills/still-${(n % STILL_COUNT) + 1}.jpg`
+/**
+ * Usable unique clips only.
+ * Dropped: 4/5/13 (rainbow test patterns), 7 (duplicate of 1).
+ * Colour wash keeps the rest inside each board's hue family.
+ */
+const GLOBE_REELS = [
+  '/media/small/reel-1.mp4',
+  '/media/small/reel-2.mp4',
+  '/media/small/reel-3.mp4',
+  '/media/small/reel-6.mp4',
+  '/media/small/reel-8.mp4',
+  '/media/small/reel-9.mp4',
+  '/media/small/reel-10.mp4',
+  '/media/small/reel-11.mp4',
+  '/media/small/reel-12.mp4',
+  '/media/small/reel-14.mp4',
+] as const
+
+/** Stills from those same reels (3 frames each). */
+const GLOBE_STILLS = [
+  1, 2, 3, 4, 5, 6, 7, 8, 9, 16, 17, 18, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40, 41, 42,
+]
+const stillSrc = (n: number) =>
+  `/media/stills/still-${GLOBE_STILLS[((n % GLOBE_STILLS.length) + GLOBE_STILLS.length) % GLOBE_STILLS.length]!}.jpg`
+
+/** Pick clips so a board never shows the same reel twice, and neighbours differ. */
+function clipFor(board: number, slot: number, taken: number[] = []) {
+  const n = GLOBE_REELS.length
+  let idx = (board * 3 + slot * 5 + 1) % n
+  for (let step = 0; step < n; step++) {
+    const cand = (idx + step) % n
+    if (!taken.includes(cand)) return cand
+  }
+  return idx
+}
 
 const CATEGORY_LABEL: Record<Category, string> = {
   promotional: 'Promotional',
@@ -63,7 +107,6 @@ const GLOBE_COUNT = 50
 export const PROJECTS: Project[] = Array.from({ length: GLOBE_COUNT }, (_, i) => {
   const site = SITE_PROJECTS[i % SITE_PROJECTS.length]
   const tiles = boardTiles(i)
-  const n = GLOBE_REELS.length
 
   const videos: Partial<Record<number, string>> = {}
   const images: Partial<Record<number, string>> = {}
@@ -72,13 +115,17 @@ export const PROJECTS: Project[] = Array.from({ length: GLOBE_COUNT }, (_, i) =>
 
   // Biggest tile always moves; small boards (3 tiles) get one clip, others two.
   const clipCount = tiles.length <= 3 ? 1 : 2
+  const usedClips: number[] = []
   tiles.slice(0, clipCount).forEach((t, k) => {
-    videos[t.tileIndex] = GLOBE_REELS[(i * 5 + k * 7) % n]
+    const idx = clipFor(i, k, usedClips)
+    usedClips.push(idx)
+    videos[t.tileIndex] = GLOBE_REELS[idx]!
   })
-  // Next one or two tiles get photo stills; the rest stay graphic.
+  // Photos from a different reel than this board's clips, so tiles don't rhyme.
   const photoCount = tiles.length >= 5 ? 2 : 1
   tiles.slice(clipCount, clipCount + photoCount).forEach((t, k) => {
-    images[t.tileIndex] = stillSrc(i * 11 + k * 17)
+    const stillReel = clipFor(i, k + 2, usedClips)
+    images[t.tileIndex] = stillSrc(stillReel * 3 + k)
   })
 
   return {
