@@ -1,0 +1,8 @@
+.app-shell {
+  min-height: 100vh;
+  background: var(--color-shell);
+}
+
+.app-shell.booting {
+  visibility: hidden;
+}

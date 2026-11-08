@@ -1,0 +1,265 @@
+.page {
+  width: 1470px;
+  background: var(--color-page);
+}
+
+/* Figma 62:4641 — 1470 × 827, #ea1414 */
+.hero {
+  position: relative;
+  width: 1470px;
+  height: 827px;
+  background: #ea1414;
+  overflow: hidden;
+}
+
+.back {
+  position: absolute;
+  left: 28px;
+  top: 28px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 24px;
+  background: rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 16px;
+  letter-spacing: -0.8px;
+  line-height: normal;
+  color: #ffffff;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-box-trim: trim-both;
+  text-box-edge: cap alphabetic;
+  z-index: 2;
+}
+
+.play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  border-radius: 100px;
+  background: rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 10px 10px 14px;
+}
+
+/* Figma 62:4648 — 1470 × 258, #b90000 */
+.titleBand {
+  position: relative;
+  width: 1470px;
+  height: 258px;
+  background: #b90000;
+  overflow: hidden;
+  color: #ffffff;
+}
+
+.metaRow {
+  position: absolute;
+  left: calc(50% + 0.5px);
+  top: 68px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 50px;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 16px;
+  letter-spacing: -0.64px;
+  line-height: normal;
+  text-transform: uppercase;
+  text-align: justify;
+  white-space: nowrap;
+  color: #ffffff;
+  text-box-trim: trim-both;
+  text-box-edge: cap alphabetic;
+}
+
+/* Figma 62:4649 — Larsseit Regular 100px / tracking -4px / #ffffff */
+.title {
+  position: absolute;
+  left: calc(50% - 464px);
+  top: 120px;
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 100px;
+  letter-spacing: -4px;
+  line-height: normal;
+  text-transform: uppercase;
+  text-align: justify;
+  white-space: nowrap;
+  color: #ffffff;
+  text-box-trim: trim-both;
+  text-box-edge: cap alphabetic;
+}
+
+/* Body y=1253 → 1253 − (827+258) = 168px; height 201px */
+.body {
+  width: 542px;
+  margin: 168px auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.body p {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 16px;
+  letter-spacing: -0.8px;
+  text-transform: uppercase;
+  text-align: justify;
+  color: #000000;
+  line-height: normal;
+  text-box-trim: trim-both;
+  text-box-edge: cap alphabetic;
+}
+
+/* Full media y=1622; body ends 1454 → gap 168px */
+.gallery {
+  margin: 168px 28px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.media {
+  position: relative;
+  background: #ea1414;
+  overflow: hidden;
+}
+
+.full {
+  width: 1414px;
+  height: 795px;
+}
+
+.pair {
+  display: flex;
+  gap: 12px;
+}
+
+.pair .media {
+  width: 701px;
+  height: 394px;
+}
+
+.triple {
+  display: flex;
+  gap: 13px;
+}
+
+.mediaTall {
+  width: 463px;
+  height: 700px;
+  background: #ea1414;
+}
+
+/* Triple ends 3535; divider y=3635 → 100px; up-next y=3685 → +50px */
+.divider {
+  width: 1414px;
+  height: 1px;
+  margin: 100px auto 0;
+  background: var(--color-divider);
+}
+
+.upNext {
+  display: flex;
+  gap: 12px;
+  margin: 50px 28px 0;
+}
+
+.upNextMedia {
+  width: 701px;
+  height: 394px;
+  flex-shrink: 0;
+}
+
+.upNextCopy {
+  position: relative;
+  width: 701px;
+  height: 394px;
+}
+
+.upNextLabel {
+  position: absolute;
+  left: 32px;
+  top: 32px;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 14px;
+  letter-spacing: -0.7px;
+  line-height: normal;
+  text-transform: uppercase;
+  text-align: justify;
+  color: #000000;
+  width: 272px;
+}
+
+.upNextTitle {
+  position: absolute;
+  left: 32px;
+  top: 64px;
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 40px;
+  line-height: 36px;
+  letter-spacing: -2px;
+  text-transform: uppercase;
+  text-align: justify;
+  color: #000000;
+  white-space: nowrap;
+}
+
+.upNextMeta {
+  position: absolute;
+  left: 32px;
+  top: 114px;
+  margin: 0;
+  width: 272px;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 14px;
+  letter-spacing: -0.7px;
+  line-height: normal;
+  text-transform: uppercase;
+  text-align: justify;
+  color: #000000;
+}
+
+.viewProject {
+  position: absolute;
+  left: 32px;
+  top: 332px;
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 24px;
+  background: #ea1414;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 14px;
+  letter-spacing: -0.7px;
+  line-height: normal;
+  color: #ffffff;
+  text-transform: uppercase;
+  text-align: justify;
+}
+
+[data-theme='dark'] .body p,
+[data-theme='dark'] .upNextLabel,
+[data-theme='dark'] .upNextTitle,
+[data-theme='dark'] .upNextMeta {
+  color: #ffffff;
+}
