@@ -82,7 +82,7 @@ export function AboutPage() {
           <span>Our work</span>
           <Link to={`${base}/projects`} className={styles.explore}>
             <span>Explore all</span>
-            <img src="/assets/arrow-union.svg" alt="" width={7} height={9} />
+            <img src="/assets/arrow-union.svg" alt="" width={6.207} height={8.354} />
           </Link>
         </div>
         <div className={styles.workGrid}>

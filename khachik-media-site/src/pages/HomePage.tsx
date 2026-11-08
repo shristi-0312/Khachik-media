@@ -39,7 +39,7 @@ export function HomePage() {
           ))}
           <Link to={`${base}/about`} className={styles.more}>
             <span>More about us</span>
-            <img src="/assets/arrow-union.svg" alt="" width={7} height={9} />
+            <img src="/assets/arrow-union.svg" alt="" width={6.207} height={8.354} />
           </Link>
         </div>
       </section>

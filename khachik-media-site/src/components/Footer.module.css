@@ -1,10 +1,11 @@
 .footer {
   position: relative;
-  width: 100%;
-  height: var(--header-h);
-  background: var(--color-red);
+  width: 1470px;
+  height: 50px;
+  background: #ea1414;
   backdrop-filter: blur(25px);
-  overflow: hidden;
+  -webkit-backdrop-filter: blur(25px);
+  overflow: clip;
 }
 
 .logo {
@@ -21,9 +22,12 @@
   font-weight: 700;
   font-size: 20px;
   letter-spacing: -1px;
-  color: var(--color-white);
+  line-height: normal;
+  color: #ffffff;
   text-transform: uppercase;
   white-space: nowrap;
+  text-box-trim: trim-both;
+  text-box-edge: cap alphabetic;
 }
 
 .nav {
@@ -43,11 +47,15 @@
   height: 50px;
   padding: 10px 0;
   font-family: var(--font-mono);
+  font-weight: 400;
   font-size: 14px;
   letter-spacing: -0.7px;
-  color: var(--color-white);
+  line-height: normal;
+  color: #ffffff;
   text-transform: uppercase;
   white-space: nowrap;
+  text-box-trim: trim-both;
+  text-box-edge: cap alphabetic;
 }
 
 .socials {
@@ -77,11 +85,15 @@
   align-items: center;
   justify-content: center;
   padding: 10px 28px;
-  background: var(--color-ink);
+  background: #151313;
   font-family: var(--font-mono);
+  font-weight: 400;
   font-size: 14px;
   letter-spacing: -0.7px;
-  color: var(--color-white);
+  line-height: normal;
+  color: #ffffff;
   text-transform: uppercase;
   white-space: nowrap;
+  text-box-trim: trim-both;
+  text-box-edge: cap alphabetic;
 }

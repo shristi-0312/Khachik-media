@@ -50,6 +50,11 @@
   padding: 10px 10px 10px 14px;
 }
 
+/* Figma up-next play: left calc(50% + 0.5px) */
+.playOffset {
+  left: calc(50% + 0.5px);
+}
+
 /* Figma 62:4648 — 1470 × 258, #b90000 */
 .titleBand {
   position: relative;
@@ -164,30 +169,37 @@
   background: #ea1414;
 }
 
-/* Triple ends 3535; divider y=3635 → 100px; up-next y=3685 → +50px */
+/* Triple ends 3535; divider y=3635 → 100px; up-next y=3685 → +50px;
+   up-next ends 4079; footer y=4179 → 100px */
 .divider {
   width: 1414px;
-  height: 1px;
+  height: 0;
   margin: 100px auto 0;
-  background: var(--color-divider);
+  border: 0;
+  border-top: 1px solid var(--color-divider);
 }
 
 .upNext {
   display: flex;
+  align-items: center;
   gap: 12px;
-  margin: 50px 28px 0;
+  margin: 50px 28px 100px;
 }
 
 .upNextMedia {
+  position: relative;
   width: 701px;
   height: 394px;
   flex-shrink: 0;
+  overflow: clip;
 }
 
 .upNextCopy {
   position: relative;
   width: 701px;
   height: 394px;
+  flex-shrink: 0;
+  overflow: clip;
 }
 
 .upNextLabel {
@@ -204,6 +216,8 @@
   text-align: justify;
   color: #000000;
   width: 272px;
+  text-box-trim: trim-both;
+  text-box-edge: cap alphabetic;
 }
 
 .upNextTitle {
@@ -220,6 +234,8 @@
   text-align: justify;
   color: #000000;
   white-space: nowrap;
+  text-box-trim: trim-both;
+  text-box-edge: cap alphabetic;
 }
 
 .upNextMeta {
@@ -236,6 +252,8 @@
   text-transform: uppercase;
   text-align: justify;
   color: #000000;
+  text-box-trim: trim-both;
+  text-box-edge: cap alphabetic;
 }
 
 .viewProject {
@@ -255,6 +273,9 @@
   color: #ffffff;
   text-transform: uppercase;
   text-align: justify;
+  white-space: nowrap;
+  text-box-trim: trim-both;
+  text-box-edge: cap alphabetic;
 }
 
 [data-theme='dark'] .body p,

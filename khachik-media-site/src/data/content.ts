@@ -31,19 +31,6 @@ export const ABOUT_BODY = [
 
 export const PROJECTS: Project[] = [
   {
-    slug: 'ultrahuman-abu-dhabi',
-    title: 'Ultrahuman Abu Dhabi',
-    date: 'Oct, 2025',
-    year: '2025',
-    client: 'Ultrahuman',
-    service: 'End to End Content Production',
-    category: 'promotional',
-    description: [
-      'We captured Ultrahuman’s Abu Dhabi moment end to end — from on-ground coverage to polished edits built to hold attention from the first second.',
-      'The result is footage that feels natural, warm and real, shaped for brands and audiences who expect stories with heart.',
-    ],
-  },
-  {
     slug: 'bluorng-x-playboy',
     title: 'Bluorng X Playboy',
     date: 'Oct, 2024',
@@ -54,6 +41,19 @@ export const PROJECTS: Project[] = [
     description: [
       "We had the exciting opportunity to shoot, edit, and produce the PLAYBOY X BLUORNG campaign, merging PLAYBOY's iconic style with BLUORNG’s bold, contemporary edge. From the high-energy shoot to the final polished edit, every step was meticulously crafted to create a visually striking, seamless fusion of both brands’ unique vibes.",
       'We handled photography, videography, and complete end-to-end campaign production, bringing the vision to life across every frame. The result is a campaign that perfectly captures the essence of both worlds, bold and unforgettable.',
+    ],
+  },
+  {
+    slug: 'ultrahuman-abu-dhabi',
+    title: 'Ultrahuman Abu Dhabi',
+    date: 'Oct, 2024',
+    year: '2024',
+    client: 'Ultrahuman',
+    service: 'End to End Content Production',
+    category: 'promotional',
+    description: [
+      'We captured Ultrahuman’s Abu Dhabi moment end to end — from on-ground coverage to polished edits built to hold attention from the first second.',
+      'The result is footage that feels natural, warm and real, shaped for brands and audiences who expect stories with heart.',
     ],
   },
   {
