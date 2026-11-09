@@ -15,7 +15,8 @@ app.use(
         callback(null, true)
         return
       }
-      callback(new Error(`CORS blocked for origin: ${origin}`))
+      // Reject quietly (no 500) — browser will show a CORS failure instead
+      callback(null, false)
     },
     credentials: true,
   }),

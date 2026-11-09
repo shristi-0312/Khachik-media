@@ -36,6 +36,8 @@ jobs:
           cache-dependency-path: khachik-media-admin/package-lock.json
       - run: npm ci
       - run: npm run build
+        env:
+          VITE_API_URL: https://65-2-150-121.sslip.io/api
 
   site:
     runs-on: ubuntu-latest
@@ -51,3 +53,5 @@ jobs:
           cache-dependency-path: khachik-media-site/package-lock.json
       - run: npm ci
       - run: npm run build
+        env:
+          VITE_API_URL: https://65-2-150-121.sslip.io/api

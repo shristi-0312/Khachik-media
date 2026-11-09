@@ -1,3 +1,10 @@
+import dotenv from 'dotenv'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const here = path.dirname(fileURLToPath(import.meta.url))
+dotenv.config({ path: path.resolve(here, '../.env') })
+
 function required(name: string, fallback?: string): string {
   const value = process.env[name] ?? fallback
   if (!value) throw new Error(`Missing env var: ${name}`)
