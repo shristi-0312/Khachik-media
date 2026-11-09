@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useId, useState, type DragEvent, type FormEvent } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import {
   createProject,
@@ -195,13 +195,15 @@ export function ProjectEditorPage() {
 
   if (loading) return <p className="loading-block">Loading project…</p>
 
+  const filledGallery = GALLERY_SLOTS.filter(({ slot }) => form.gallery[slot]).length
+
   return (
     <form className="stack loose" onSubmit={onSubmit}>
-      <div className="row between wrap">
+      <div className="editor-toolbar">
         <Link className="button ghost sm" to="/projects">
-          ← Back to projects
+          ← Back
         </Link>
-        <div className="row">
+        <div className="row wrap">
           {status ? <p className="ok">{status}</p> : null}
           {error ? <p className="error">{error}</p> : null}
           <button type="submit" className="button primary" disabled={saving || Boolean(uploading)}>
@@ -213,7 +215,12 @@ export function ProjectEditorPage() {
       <div className="editor-layout">
         <div className="stack loose">
           <section className="panel">
-            <h2>Details</h2>
+            <div className="section-head">
+              <div>
+                <h2>Project details</h2>
+                <p>Core info shown on the site</p>
+              </div>
+            </div>
             <div className="grid2">
               <label>
                 Project name
@@ -271,6 +278,145 @@ export function ProjectEditorPage() {
                   required
                 />
               </label>
+            </div>
+
+            <label style={{ marginTop: 16 }}>
+              Description
+              <textarea
+                rows={7}
+                value={form.descriptionText}
+                onChange={(e) => setField('descriptionText', e.target.value)}
+                placeholder="Separate paragraphs with a blank line"
+              />
+            </label>
+          </section>
+
+          <section className="panel">
+            <div className="section-head">
+              <div>
+                <h2>Key media</h2>
+                <p>Cover for the grid, hero for the detail page</p>
+              </div>
+            </div>
+            <div className="media-pair">
+              <MediaSlot
+                label="Cover"
+                hint="Projects grid thumbnail"
+                url={form.coverUrl}
+                mediaType={form.coverType || null}
+                uploading={uploading === 'cover'}
+                tall
+                onUpload={(file) => void handleUpload('cover', file)}
+                onClear={() => setForm((prev) => ({ ...prev, coverUrl: '', coverType: '' }))}
+              />
+              <MediaSlot
+                label="Hero"
+                hint="Top of project page"
+                url={form.heroUrl}
+                mediaType={form.heroType || null}
+                uploading={uploading === 'hero'}
+                tall
+                onUpload={(file) => void handleUpload('hero', file)}
+                onClear={() => setForm((prev) => ({ ...prev, heroUrl: '', heroType: '' }))}
+              />
+            </div>
+          </section>
+
+          <section className="panel">
+            <div className="section-head">
+              <div>
+                <h2>Gallery</h2>
+                <p>
+                  {filledGallery} of {GALLERY_SLOTS.length} slots filled
+                </p>
+              </div>
+            </div>
+
+            <div className="gallery-layout">
+              <MediaSlot
+                label="Full width"
+                hint="Large single frame"
+                url={form.gallery.full?.url ?? ''}
+                mediaType={form.gallery.full?.mediaType ?? null}
+                uploading={uploading === 'full'}
+                wide
+                onUpload={(file) => void handleUpload('full', file)}
+                onClear={() =>
+                  setForm((prev) => ({ ...prev, gallery: { ...prev.gallery, full: null } }))
+                }
+              />
+
+              <div className="gallery-pair">
+                {GALLERY_SLOTS.filter((s) => s.slot.startsWith('pair-')).map(({ slot, label }) => (
+                  <MediaSlot
+                    key={slot}
+                    label={label.replace('Gallery ', '')}
+                    hint="Side-by-side pair"
+                    url={form.gallery[slot]?.url ?? ''}
+                    mediaType={form.gallery[slot]?.mediaType ?? null}
+                    uploading={uploading === slot}
+                    onUpload={(file) => void handleUpload(slot, file)}
+                    onClear={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        gallery: { ...prev.gallery, [slot]: null },
+                      }))
+                    }
+                  />
+                ))}
+              </div>
+
+              <div className="gallery-triple">
+                {GALLERY_SLOTS.filter((s) => s.slot.startsWith('triple-')).map(({ slot, label }) => (
+                  <MediaSlot
+                    key={slot}
+                    label={label.replace('Gallery ', '')}
+                    hint="Triple row"
+                    url={form.gallery[slot]?.url ?? ''}
+                    mediaType={form.gallery[slot]?.mediaType ?? null}
+                    uploading={uploading === slot}
+                    onUpload={(file) => void handleUpload(slot, file)}
+                    onClear={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        gallery: { ...prev.gallery, [slot]: null },
+                      }))
+                    }
+                  />
+                ))}
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <aside className="editor-aside stack">
+          <section className="panel">
+            <h2>Publish</h2>
+            <label className="toggle-row">
+              <span>
+                <strong>Published on site</strong>
+                <small>
+                  {form.published
+                    ? 'Visible on the public site'
+                    : 'Draft — hidden from the public site'}
+                </small>
+              </span>
+              <input
+                type="checkbox"
+                checked={form.published}
+                onChange={(e) => setField('published', e.target.checked)}
+              />
+            </label>
+            <div style={{ marginTop: 14 }}>
+              <span className={`badge ${form.published ? 'live' : 'draft'}`}>
+                {form.published ? 'Live' : 'Draft'}
+              </span>
+            </div>
+          </section>
+
+          <section className="panel">
+            <h2>Listing</h2>
+            <div className="stack">
               <label>
                 Category
                 <select
@@ -293,104 +439,6 @@ export function ProjectEditorPage() {
                 />
               </label>
             </div>
-
-            <label style={{ marginTop: 16 }}>
-              Description
-              <textarea
-                rows={8}
-                value={form.descriptionText}
-                onChange={(e) => setField('descriptionText', e.target.value)}
-                placeholder="Paragraphs separated by a blank line"
-              />
-            </label>
-          </section>
-
-          <section className="panel">
-            <h2>Cover</h2>
-            <p className="muted" style={{ marginTop: -6, marginBottom: 14 }}>
-              Used on the projects grid
-            </p>
-            <MediaSlot
-              url={form.coverUrl}
-              mediaType={form.coverType || null}
-              uploading={uploading === 'cover'}
-              onUpload={(file) => void handleUpload('cover', file)}
-              onClear={() => setForm((prev) => ({ ...prev, coverUrl: '', coverType: '' }))}
-            />
-          </section>
-
-          <section className="panel">
-            <h2>Hero</h2>
-            <MediaSlot
-              url={form.heroUrl}
-              mediaType={form.heroType || null}
-              uploading={uploading === 'hero'}
-              onUpload={(file) => void handleUpload('hero', file)}
-              onClear={() => setForm((prev) => ({ ...prev, heroUrl: '', heroType: '' }))}
-            />
-          </section>
-
-          <section className="panel">
-            <h2>Gallery slots</h2>
-            <div className="grid2" style={{ marginTop: 4 }}>
-              {GALLERY_SLOTS.map(({ slot, label }) => (
-                <div key={slot} className="stack tight">
-                  <h3 style={{ margin: 0 }}>{label}</h3>
-                  <MediaSlot
-                    url={form.gallery[slot]?.url ?? ''}
-                    mediaType={form.gallery[slot]?.mediaType ?? null}
-                    uploading={uploading === slot}
-                    onUpload={(file) => void handleUpload(slot, file)}
-                    onClear={() =>
-                      setForm((prev) => ({
-                        ...prev,
-                        gallery: { ...prev.gallery, [slot]: null },
-                      }))
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
-
-        <aside className="editor-aside stack">
-          <section className="panel">
-            <h2>Publish</h2>
-            <label className="check-row">
-              <input
-                type="checkbox"
-                checked={form.published}
-                onChange={(e) => setField('published', e.target.checked)}
-              />
-              Published on site
-            </label>
-            <p className="muted" style={{ marginTop: 12 }}>
-              {form.published
-                ? 'This project is visible on the public site.'
-                : 'Saved as draft — hidden from the public site.'}
-            </p>
-            <div style={{ marginTop: 16 }}>
-              <span className={`badge ${form.published ? 'live' : 'draft'}`}>
-                {form.published ? 'Live' : 'Draft'}
-              </span>
-            </div>
-          </section>
-
-          <section className="panel">
-            <h2>Quick facts</h2>
-            <div className="stack tight">
-              <p className="muted" style={{ margin: 0 }}>
-                Category
-              </p>
-              <span className="category-chip">
-                {CATEGORIES.find((c) => c.id === form.category)?.label ?? form.category}
-              </span>
-              <p className="muted" style={{ margin: '12px 0 0' }}>
-                Sort order
-              </p>
-              <span className="order-pill">{form.sortOrder}</span>
-            </div>
           </section>
         </aside>
       </div>
@@ -399,46 +447,95 @@ export function ProjectEditorPage() {
 }
 
 function MediaSlot({
+  label,
+  hint,
   url,
   mediaType,
   uploading,
   onUpload,
   onClear,
+  tall,
+  wide,
 }: {
+  label: string
+  hint?: string
   url: string
   mediaType: MediaType | null
   uploading: boolean
   onUpload: (file: File | null) => void
   onClear: () => void
+  tall?: boolean
+  wide?: boolean
 }) {
+  const inputId = useId()
+  const [dragging, setDragging] = useState(false)
+
+  function onDrop(e: DragEvent<HTMLLabelElement>) {
+    e.preventDefault()
+    setDragging(false)
+    const file = e.dataTransfer.files?.[0] ?? null
+    onUpload(file)
+  }
+
   return (
-    <div className="media-slot">
-      <input
-        type="file"
-        accept="image/*,video/*"
-        disabled={uploading}
-        onChange={(e) => onUpload(e.target.files?.[0] ?? null)}
-      />
-      {uploading ? <p className="muted">Uploading…</p> : null}
-      <div className="media-preview">
+    <div className={`upload-card${wide ? ' wide' : ''}${tall ? ' tall' : ''}`}>
+      <div className="upload-card-head">
+        <div>
+          <h3>{label}</h3>
+          {hint ? <p>{hint}</p> : null}
+        </div>
         {url ? (
-          mediaType === 'video' ? (
-            <video src={url} controls />
-          ) : (
-            <img src={url} alt="" />
-          )
-        ) : (
-          <div className="media-empty">No media yet</div>
-        )}
-      </div>
-      {url ? (
-        <>
-          <p className="muted break">{url}</p>
-          <button type="button" className="button secondary sm" onClick={onClear}>
-            Clear
+          <button type="button" className="button ghost sm" onClick={onClear}>
+            Remove
           </button>
-        </>
-      ) : null}
+        ) : null}
+      </div>
+
+      <label
+        htmlFor={inputId}
+        className={`dropzone${dragging ? ' dragging' : ''}${url ? ' has-media' : ''}${
+          uploading ? ' busy' : ''
+        }`}
+        onDragEnter={(e) => {
+          e.preventDefault()
+          setDragging(true)
+        }}
+        onDragOver={(e) => e.preventDefault()}
+        onDragLeave={(e) => {
+          e.preventDefault()
+          setDragging(false)
+        }}
+        onDrop={onDrop}
+      >
+        <input
+          id={inputId}
+          className="dropzone-input"
+          type="file"
+          accept="image/*,video/*"
+          disabled={uploading}
+          onChange={(e) => {
+            onUpload(e.target.files?.[0] ?? null)
+            e.target.value = ''
+          }}
+        />
+
+        {url ? (
+          <div className="dropzone-preview">
+            {mediaType === 'video' ? <video src={url} controls /> : <img src={url} alt="" />}
+            <div className="dropzone-overlay">
+              <span className="button secondary sm">{uploading ? 'Uploading…' : 'Replace file'}</span>
+            </div>
+          </div>
+        ) : (
+          <div className="dropzone-empty">
+            <span className="dropzone-icon" aria-hidden="true">
+              ↑
+            </span>
+            <strong>{uploading ? 'Uploading…' : 'Drop file or click to upload'}</strong>
+            <span>Images or video</span>
+          </div>
+        )}
+      </label>
     </div>
   )
 }

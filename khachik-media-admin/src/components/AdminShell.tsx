@@ -4,11 +4,11 @@ import { isLoggedIn, logout } from '../api'
 const TITLES: Record<string, { title: string; subtitle: string }> = {
   '/': {
     title: 'Overview',
-    subtitle: 'Studio pulse across the catalogue',
+    subtitle: 'A quick look at your projects',
   },
   '/projects': {
     title: 'Projects',
-    subtitle: 'Create, publish, and order the work',
+    subtitle: 'Search, edit, and publish work',
   },
 }
 
@@ -17,7 +17,7 @@ function resolveMeta(pathname: string) {
     const isNew = pathname.endsWith('/new')
     return {
       title: isNew ? 'New project' : 'Edit project',
-      subtitle: isNew ? 'Add a piece to the catalogue' : 'Update media, copy, and publish state',
+      subtitle: isNew ? 'Add a new project to the site' : 'Update details, media, and status',
     }
   }
   return TITLES[pathname] ?? { title: 'Admin', subtitle: 'Khachik Media' }
@@ -37,7 +37,7 @@ export function AdminShell() {
           <div className="brand-mark">KM</div>
           <div className="brand-copy">
             <span className="brand-name">Khachik</span>
-            <span className="brand-sub">Studio admin</span>
+            <span className="brand-sub">Admin</span>
           </div>
         </div>
 
