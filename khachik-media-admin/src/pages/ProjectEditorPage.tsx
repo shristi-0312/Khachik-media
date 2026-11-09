@@ -193,167 +193,208 @@ export function ProjectEditorPage() {
     }
   }
 
-  if (loading) return <main className="page">Loading…</main>
+  if (loading) return <p className="loading-block">Loading project…</p>
 
   return (
-    <main className="page">
-      <header className="row between">
-        <div>
-          <p>
-            <Link to="/">← Projects</Link>
-          </p>
-          <h1>{isNew ? 'New project' : 'Edit project'}</h1>
+    <form className="stack loose" onSubmit={onSubmit}>
+      <div className="row between wrap">
+        <Link className="button ghost sm" to="/projects">
+          ← Back to projects
+        </Link>
+        <div className="row">
+          {status ? <p className="ok">{status}</p> : null}
+          {error ? <p className="error">{error}</p> : null}
+          <button type="submit" className="button primary" disabled={saving || Boolean(uploading)}>
+            {saving ? 'Saving…' : 'Save project'}
+          </button>
         </div>
-      </header>
+      </div>
 
-      <form className="stack" onSubmit={onSubmit}>
-        <div className="grid2">
-          <label>
-            Project name
-            <input
-              value={form.title}
-              onChange={(e) => {
-                const title = e.target.value
-                setForm((prev) => ({
-                  ...prev,
-                  title,
-                  slug: isNew && !prev.slug ? slugify(title) : prev.slug,
-                }))
-              }}
-              required
-            />
-          </label>
-          <label>
-            Slug
-            <input
-              value={form.slug}
-              onChange={(e) => setField('slug', slugify(e.target.value))}
-              required
-            />
-          </label>
-          <label>
-            Date label
-            <input
-              value={form.date}
-              onChange={(e) => setField('date', e.target.value)}
-              placeholder="Oct, 2024"
-              required
-            />
-          </label>
-          <label>
-            Year
-            <input value={form.year} onChange={(e) => setField('year', e.target.value)} required />
-          </label>
-          <label>
-            Client
-            <input
-              value={form.client}
-              onChange={(e) => setField('client', e.target.value)}
-              required
-            />
-          </label>
-          <label>
-            Service
-            <input
-              value={form.service}
-              onChange={(e) => setField('service', e.target.value)}
-              required
-            />
-          </label>
-          <label>
-            Category
-            <select
-              value={form.category}
-              onChange={(e) => setField('category', e.target.value as Category)}
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Sort order
-            <input
-              type="number"
-              value={form.sortOrder}
-              onChange={(e) => setField('sortOrder', Number(e.target.value))}
-            />
-          </label>
-        </div>
-
-        <label>
-          Description (paragraphs separated by a blank line)
-          <textarea
-            rows={8}
-            value={form.descriptionText}
-            onChange={(e) => setField('descriptionText', e.target.value)}
-          />
-        </label>
-
-        <label className="row">
-          <input
-            type="checkbox"
-            checked={form.published}
-            onChange={(e) => setField('published', e.target.checked)}
-          />
-          Published
-        </label>
-
-        <section className="panel">
-          <h2>Cover (projects grid)</h2>
-          <MediaSlot
-            url={form.coverUrl}
-            mediaType={form.coverType || null}
-            uploading={uploading === 'cover'}
-            onUpload={(file) => void handleUpload('cover', file)}
-            onClear={() => setForm((prev) => ({ ...prev, coverUrl: '', coverType: '' }))}
-          />
-        </section>
-
-        <section className="panel">
-          <h2>Hero</h2>
-          <MediaSlot
-            url={form.heroUrl}
-            mediaType={form.heroType || null}
-            uploading={uploading === 'hero'}
-            onUpload={(file) => void handleUpload('hero', file)}
-            onClear={() => setForm((prev) => ({ ...prev, heroUrl: '', heroType: '' }))}
-          />
-        </section>
-
-        <section className="panel">
-          <h2>Gallery slots</h2>
-          <div className="grid2">
-            {GALLERY_SLOTS.map(({ slot, label }) => (
-              <div key={slot}>
-                <h3>{label}</h3>
-                <MediaSlot
-                  url={form.gallery[slot]?.url ?? ''}
-                  mediaType={form.gallery[slot]?.mediaType ?? null}
-                  uploading={uploading === slot}
-                  onUpload={(file) => void handleUpload(slot, file)}
-                  onClear={() =>
+      <div className="editor-layout">
+        <div className="stack loose">
+          <section className="panel">
+            <h2>Details</h2>
+            <div className="grid2">
+              <label>
+                Project name
+                <input
+                  value={form.title}
+                  onChange={(e) => {
+                    const title = e.target.value
                     setForm((prev) => ({
                       ...prev,
-                      gallery: { ...prev.gallery, [slot]: null },
+                      title,
+                      slug: isNew && !prev.slug ? slugify(title) : prev.slug,
                     }))
-                  }
+                  }}
+                  required
                 />
-              </div>
-            ))}
-          </div>
-        </section>
+              </label>
+              <label>
+                Slug
+                <input
+                  value={form.slug}
+                  onChange={(e) => setField('slug', slugify(e.target.value))}
+                  required
+                />
+              </label>
+              <label>
+                Date label
+                <input
+                  value={form.date}
+                  onChange={(e) => setField('date', e.target.value)}
+                  placeholder="Oct, 2024"
+                  required
+                />
+              </label>
+              <label>
+                Year
+                <input
+                  value={form.year}
+                  onChange={(e) => setField('year', e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Client
+                <input
+                  value={form.client}
+                  onChange={(e) => setField('client', e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Service
+                <input
+                  value={form.service}
+                  onChange={(e) => setField('service', e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Category
+                <select
+                  value={form.category}
+                  onChange={(e) => setField('category', e.target.value as Category)}
+                >
+                  {CATEGORIES.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Sort order
+                <input
+                  type="number"
+                  value={form.sortOrder}
+                  onChange={(e) => setField('sortOrder', Number(e.target.value))}
+                />
+              </label>
+            </div>
 
-        {error ? <p className="error">{error}</p> : null}
-        {status ? <p className="ok">{status}</p> : null}
+            <label style={{ marginTop: 16 }}>
+              Description
+              <textarea
+                rows={8}
+                value={form.descriptionText}
+                onChange={(e) => setField('descriptionText', e.target.value)}
+                placeholder="Paragraphs separated by a blank line"
+              />
+            </label>
+          </section>
 
-        <button type="submit" disabled={saving || Boolean(uploading)}>
-          {saving ? 'Saving…' : 'Save project'}
-        </button>
-      </form>
-    </main>
+          <section className="panel">
+            <h2>Cover</h2>
+            <p className="muted" style={{ marginTop: -6, marginBottom: 14 }}>
+              Used on the projects grid
+            </p>
+            <MediaSlot
+              url={form.coverUrl}
+              mediaType={form.coverType || null}
+              uploading={uploading === 'cover'}
+              onUpload={(file) => void handleUpload('cover', file)}
+              onClear={() => setForm((prev) => ({ ...prev, coverUrl: '', coverType: '' }))}
+            />
+          </section>
+
+          <section className="panel">
+            <h2>Hero</h2>
+            <MediaSlot
+              url={form.heroUrl}
+              mediaType={form.heroType || null}
+              uploading={uploading === 'hero'}
+              onUpload={(file) => void handleUpload('hero', file)}
+              onClear={() => setForm((prev) => ({ ...prev, heroUrl: '', heroType: '' }))}
+            />
+          </section>
+
+          <section className="panel">
+            <h2>Gallery slots</h2>
+            <div className="grid2" style={{ marginTop: 4 }}>
+              {GALLERY_SLOTS.map(({ slot, label }) => (
+                <div key={slot} className="stack tight">
+                  <h3 style={{ margin: 0 }}>{label}</h3>
+                  <MediaSlot
+                    url={form.gallery[slot]?.url ?? ''}
+                    mediaType={form.gallery[slot]?.mediaType ?? null}
+                    uploading={uploading === slot}
+                    onUpload={(file) => void handleUpload(slot, file)}
+                    onClear={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        gallery: { ...prev.gallery, [slot]: null },
+                      }))
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        <aside className="editor-aside stack">
+          <section className="panel">
+            <h2>Publish</h2>
+            <label className="check-row">
+              <input
+                type="checkbox"
+                checked={form.published}
+                onChange={(e) => setField('published', e.target.checked)}
+              />
+              Published on site
+            </label>
+            <p className="muted" style={{ marginTop: 12 }}>
+              {form.published
+                ? 'This project is visible on the public site.'
+                : 'Saved as draft — hidden from the public site.'}
+            </p>
+            <div style={{ marginTop: 16 }}>
+              <span className={`badge ${form.published ? 'live' : 'draft'}`}>
+                {form.published ? 'Live' : 'Draft'}
+              </span>
+            </div>
+          </section>
+
+          <section className="panel">
+            <h2>Quick facts</h2>
+            <div className="stack tight">
+              <p className="muted" style={{ margin: 0 }}>
+                Category
+              </p>
+              <span className="category-chip">
+                {CATEGORIES.find((c) => c.id === form.category)?.label ?? form.category}
+              </span>
+              <p className="muted" style={{ margin: '12px 0 0' }}>
+                Sort order
+              </p>
+              <span className="order-pill">{form.sortOrder}</span>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </form>
   )
 }
 
@@ -371,7 +412,7 @@ function MediaSlot({
   onClear: () => void
 }) {
   return (
-    <div className="stack tight">
+    <div className="media-slot">
       <input
         type="file"
         accept="image/*,video/*"
@@ -379,21 +420,25 @@ function MediaSlot({
         onChange={(e) => onUpload(e.target.files?.[0] ?? null)}
       />
       {uploading ? <p className="muted">Uploading…</p> : null}
+      <div className="media-preview">
+        {url ? (
+          mediaType === 'video' ? (
+            <video src={url} controls />
+          ) : (
+            <img src={url} alt="" />
+          )
+        ) : (
+          <div className="media-empty">No media yet</div>
+        )}
+      </div>
       {url ? (
         <>
           <p className="muted break">{url}</p>
-          {mediaType === 'video' ? (
-            <video src={url} controls style={{ maxWidth: '100%', maxHeight: 180 }} />
-          ) : (
-            <img src={url} alt="" style={{ maxWidth: '100%', maxHeight: 180, objectFit: 'cover' }} />
-          )}
-          <button type="button" className="secondary" onClick={onClear}>
+          <button type="button" className="button secondary sm" onClick={onClear}>
             Clear
           </button>
         </>
-      ) : (
-        <p className="muted">No media</p>
-      )}
+      ) : null}
     </div>
   )
 }
