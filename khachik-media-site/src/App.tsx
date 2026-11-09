@@ -4,6 +4,7 @@ import { ContactModal } from './components/ContactModal'
 import { Loader } from './components/Loader'
 import { ThemeSync } from './components/ThemeSync'
 import { ContactProvider } from './context/ContactContext'
+import { ProjectsProvider } from './context/ProjectsContext'
 import { AboutPage } from './pages/AboutPage'
 import { HomePage } from './pages/HomePage'
 import { ProjectDetailPage } from './pages/ProjectDetailPage'
@@ -48,14 +49,16 @@ export default function App() {
 
   return (
     <ContactProvider>
-      <BrowserRouter>
-        {booting ? <Loader onDone={finish} /> : null}
-        <ThemeSync />
-        <div className={`app-shell ${booting ? 'booting' : ''}`}>
-          <SiteRoutes />
-        </div>
-        <ContactModal />
-      </BrowserRouter>
+      <ProjectsProvider>
+        <BrowserRouter>
+          {booting ? <Loader onDone={finish} /> : null}
+          <ThemeSync />
+          <div className={`app-shell ${booting ? 'booting' : ''}`}>
+            <SiteRoutes />
+          </div>
+          <ContactModal />
+        </BrowserRouter>
+      </ProjectsProvider>
     </ContactProvider>
   )
 }

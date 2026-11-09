@@ -4,13 +4,15 @@ import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
 import { ProjectCard } from '../components/ProjectCard'
 import { Wordmark } from '../components/Wordmark'
-import { ABOUT_BODY, PROJECTS } from '../data/content'
+import { useProjects } from '../context/ProjectsContext'
+import { ABOUT_BODY } from '../data/content'
 import { useBasePath } from '../hooks/useBasePath'
 import styles from './AboutPage.module.css'
 
 export function AboutPage() {
   const base = useBasePath()
-  const work = PROJECTS.slice(0, 2)
+  const { projects } = useProjects()
+  const work = projects.slice(0, 2)
 
   return (
     <Artboard>

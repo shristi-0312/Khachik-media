@@ -26,6 +26,23 @@ export function ProjectCard({
       <div
         className={`${styles.media} ${tone === 'red' ? styles.red : styles.gray}`}
       >
+        {project.coverUrl ? (
+          project.coverType === 'video' ||
+          /\.(mp4|webm|mov)(\?|$)/i.test(project.coverUrl) ? (
+            <video
+              className={styles.coverMedia}
+              src={project.coverUrl}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              aria-hidden="true"
+            />
+          ) : (
+            <img className={styles.coverMedia} src={project.coverUrl} alt="" />
+          )
+        ) : null}
         {showPlay ? (
           <div className={styles.play}>
             <img src="/assets/play.svg" alt="" width={22} height={24} />

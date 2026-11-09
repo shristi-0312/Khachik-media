@@ -4,6 +4,22 @@ export type Category =
   | 'advertisements'
   | 'short-forms'
 
+export type MediaType = 'image' | 'video'
+
+export type GallerySlot =
+  | 'full'
+  | 'pair-1'
+  | 'pair-2'
+  | 'triple-1'
+  | 'triple-2'
+  | 'triple-3'
+
+export type GalleryItem = {
+  slot: GallerySlot
+  mediaType: MediaType
+  url: string
+}
+
 export type Project = {
   slug: string
   title: string
@@ -13,6 +29,12 @@ export type Project = {
   service: string
   category: Category
   description: string[]
+  /** Optional — filled when loaded from the admin API / CDN. */
+  coverUrl?: string | null
+  coverType?: MediaType | null
+  heroUrl?: string | null
+  heroType?: MediaType | null
+  gallery?: GalleryItem[]
 }
 
 export const CATEGORIES: { id: Category; label: string }[] = [
@@ -91,6 +113,8 @@ export const PROJECTS: Project[] = [
     description: [
       'A short-form series built to hold attention — sharp hooks, warm presence, and edits tuned for sharing.',
     ],
+    heroUrl: '/media/reel-1.mp4',
+    heroType: 'video',
   },
   {
     slug: 'new-balance-run',

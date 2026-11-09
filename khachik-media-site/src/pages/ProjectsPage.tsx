@@ -5,10 +5,12 @@ import { Header } from '../components/Header'
 import { LayoutToggle } from '../components/LayoutToggle'
 import { ProjectCard } from '../components/ProjectCard'
 import { Wordmark } from '../components/Wordmark'
-import { CATEGORIES, PROJECTS, type Category } from '../data/content'
+import { useProjects } from '../context/ProjectsContext'
+import { CATEGORIES, type Category } from '../data/content'
 import styles from './ProjectsPage.module.css'
 
 export function ProjectsPage() {
+  const { projects } = useProjects()
   const [category, setCategory] = useState<Category>('promotional')
   const [layout, setLayout] = useState<'horizontal' | 'vertical'>('horizontal')
 
@@ -17,14 +19,15 @@ export function ProjectsPage() {
     category === 'short-forms' ? 'vertical' : layout
 
   const items = useMemo(() => {
-    const filtered = PROJECTS.filter((p) => p.category === category)
-    const source = filtered.length ? filtered : PROJECTS
+    const filtered = projects.filter((p) => p.category === category)
+    const source = filtered.length ? filtered : projects
+    if (!source.length) return []
     // Match Figma density: fill grid with repeats of available work
     const count = effectiveLayout === 'horizontal' ? 8 : 12
     const out = []
     for (let i = 0; i < count; i += 1) out.push(source[i % source.length])
     return out
-  }, [category, effectiveLayout])
+  }, [category, effectiveLayout, projects])
 
   function selectCategory(next: Category) {
     setCategory(next)
