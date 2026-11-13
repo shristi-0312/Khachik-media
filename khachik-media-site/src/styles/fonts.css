@@ -16,6 +16,14 @@
 
 @font-face {
   font-family: 'Larsseit';
+  src: url('/fonts/Satoshi-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Larsseit';
   src: url('/fonts/Satoshi-700.woff2') format('woff2');
   font-weight: 700;
   font-style: normal;

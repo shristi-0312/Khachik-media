@@ -11,11 +11,18 @@
 
 .vertical {
   width: 463px;
+  gap: 16px;
 }
 
 .media {
   position: relative;
   width: 100%;
+  overflow: visible;
+}
+
+.fill {
+  position: absolute;
+  inset: 0;
   overflow: hidden;
 }
 
@@ -36,12 +43,54 @@
   height: 700px;
 }
 
-.gray {
+.gray .fill {
   background: var(--color-placeholder);
 }
 
-.red {
+.red .fill {
   background: var(--color-red);
+}
+
+/*
+ * Figma Smart Animate ON_HOVER (Gentle).
+ * Use clip-path + opacity (compositor-friendly) so it feels as snappy as the proto.
+ */
+.frameHover .fill {
+  clip-path: inset(0);
+  transition: clip-path 320ms cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+.frameHover .hoverBorder {
+  position: absolute;
+  inset: 0;
+  border: 1px solid transparent;
+  pointer-events: none;
+  z-index: 1;
+  transition: border-color 320ms cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+.frameHover .hoverCorners {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+  transition: opacity 320ms cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+.frameHover:hover .fill,
+.frameHover:focus-visible .fill {
+  clip-path: inset(8px);
+}
+
+.frameHover:hover .hoverBorder,
+.frameHover:focus-visible .hoverBorder {
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.frameHover:hover .hoverCorners,
+.frameHover:focus-visible .hoverCorners {
+  opacity: 1;
 }
 
 .play {
@@ -57,6 +106,8 @@
   align-items: center;
   justify-content: center;
   padding: 10px 10px 10px 14px;
+  z-index: 3;
+  box-sizing: border-box;
 }
 
 .meta {

@@ -1,6 +1,6 @@
 .wrap {
   position: relative;
-  width: 368px;
+  width: 219px;
   height: 86px;
   background: rgba(255, 255, 255, 0.04);
   overflow: hidden;
@@ -13,22 +13,12 @@
   transform: translate(-50%, -50%);
   width: 360px;
   height: 78px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
 }
 
-.text {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 42px;
-  line-height: normal;
-  letter-spacing: -2.1px;
-  color: #ffffff;
-  text-transform: uppercase;
-  white-space: nowrap;
-  font-style: normal;
+.mark {
+  display: block;
+  width: 360px;
+  height: 78px;
 }
 
 .corner {
@@ -49,13 +39,13 @@
 }
 
 .tr {
-  left: 360px;
+  right: 0;
   top: 0;
   transform: scaleY(-1) rotate(180deg);
 }
 
 .br {
-  left: 360px;
+  right: 0;
   top: 78px;
   transform: rotate(180deg);
 }

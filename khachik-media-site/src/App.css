@@ -4,7 +4,6 @@
 }
 
 .app-shell.booting {
-  /* Keep layout measurable for WebGL; only hide visually during loader */
-  opacity: 0;
+  /* Home stays painted under the red overlay so slide-up reveals it */
   pointer-events: none;
 }

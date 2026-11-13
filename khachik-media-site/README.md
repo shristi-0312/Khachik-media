@@ -26,5 +26,5 @@ Figma: **Larsseit** + **Paper Mono**. Self-hosted stand-ins in `public/fonts/` a
 
 ## Notes
 
-- Brand red: `#ea1414` / deep `#b90000`
+- Brand red: `#CD001A`
 - Globe sources live under `src/globe/` (embedded on Home only)

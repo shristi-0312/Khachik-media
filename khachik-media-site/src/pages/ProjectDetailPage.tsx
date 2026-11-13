@@ -67,7 +67,7 @@ export function ProjectDetailPage() {
             />
           ) : null}
           {showHeroMedia ? <div className={styles.heroScrim} aria-hidden="true" /> : null}
-          <Link to={`${base}/projects`} className={styles.back}>
+          <Link to={`${base}/films`} className={styles.back}>
             <img src="/assets/chevron-left-white.svg" alt="" width={6} height={11} />
             <span>Back</span>
           </Link>

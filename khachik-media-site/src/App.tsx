@@ -6,22 +6,27 @@ import { ThemeSync } from './components/ThemeSync'
 import { ContactProvider } from './context/ContactContext'
 import { ProjectsProvider } from './context/ProjectsContext'
 import { AboutPage } from './pages/AboutPage'
+import { FilmsPage } from './pages/FilmsPage'
 import { HomePage } from './pages/HomePage'
 import { ProjectDetailPage } from './pages/ProjectDetailPage'
-import { ProjectsPage } from './pages/ProjectsPage'
+import { StillsPage } from './pages/StillsPage'
 import './App.css'
 
 function SiteRoutes() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
-      <Route path="/projects" element={<ProjectsPage />} />
+      <Route path="/films" element={<FilmsPage />} />
+      <Route path="/stills" element={<StillsPage />} />
+      <Route path="/projects" element={<Navigate to="/films" replace />} />
       <Route path="/projects/:slug" element={<ProjectDetailPage />} />
       <Route path="/about" element={<AboutPage />} />
 
       {/* Dark showcase — same layout, Figma dark colors, no toggle UI */}
       <Route path="/dark" element={<HomePage />} />
-      <Route path="/dark/projects" element={<ProjectsPage />} />
+      <Route path="/dark/films" element={<FilmsPage />} />
+      <Route path="/dark/stills" element={<StillsPage />} />
+      <Route path="/dark/projects" element={<Navigate to="/dark/films" replace />} />
       <Route path="/dark/projects/:slug" element={<ProjectDetailPage />} />
       <Route path="/dark/about" element={<AboutPage />} />
 
@@ -33,6 +38,10 @@ function SiteRoutes() {
 export default function App() {
   const [booting, setBooting] = useState(() => {
     try {
+      if (new URLSearchParams(window.location.search).has('loader')) {
+        sessionStorage.removeItem('km-booted')
+        return true
+      }
       return sessionStorage.getItem('km-booted') !== '1'
     } catch {
       return true

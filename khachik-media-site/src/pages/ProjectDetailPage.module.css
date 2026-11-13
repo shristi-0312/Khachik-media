@@ -3,12 +3,12 @@
   background: var(--color-page);
 }
 
-/* Figma 62:4641 — 1470 × 827, #ea1414 */
+/* Hero — brand red */
 .hero {
   position: relative;
   width: 1470px;
   height: 827px;
-  background: #ea1414;
+  background: var(--color-red);
   overflow: hidden;
 }
 
@@ -80,12 +80,12 @@
   left: calc(50% + 0.5px);
 }
 
-/* Figma 62:4648 — 1470 × 258, #b90000 */
+/* Deep band */
 .titleBand {
   position: relative;
   width: 1470px;
   height: 258px;
-  background: #b90000;
+  background: var(--color-red);
   overflow: hidden;
   color: #ffffff;
 }
@@ -164,7 +164,7 @@
 
 .media {
   position: relative;
-  background: #ea1414;
+  background: var(--color-red);
   overflow: hidden;
 }
 
@@ -197,7 +197,7 @@
   position: relative;
   width: 463px;
   height: 700px;
-  background: #ea1414;
+  background: var(--color-red);
   overflow: hidden;
 }
 
@@ -296,7 +296,7 @@
   align-items: flex-start;
   gap: 8px;
   padding: 10px 24px;
-  background: #ea1414;
+  background: var(--color-red);
   font-family: var(--font-mono);
   font-weight: 400;
   font-size: 14px;

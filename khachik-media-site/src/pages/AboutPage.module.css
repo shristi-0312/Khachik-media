@@ -1,10 +1,15 @@
 .page {
+  position: relative;
   width: 1470px;
+  height: 4718px;
   background: var(--color-page);
 }
 
 .hero {
-  position: relative;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1470px;
   height: 900px;
   background: var(--color-red);
   overflow: hidden;
@@ -12,9 +17,9 @@
 
 .wordmark {
   position: absolute;
-  left: 551px;
+  left: 50%;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translate(-50%, -50%);
 }
 
 .kicker {
@@ -47,28 +52,22 @@
   text-transform: uppercase;
 }
 
-.split {
-  display: grid;
-  grid-template-columns: 380px 542px;
-  gap: 100px;
-  padding: 168px 224px 0;
-  align-items: start;
-}
-
-.splitSecond {
-  padding-top: 168px;
-}
-
 .label {
-  margin: 0 0 22px;
+  position: absolute;
+  left: 224px;
+  margin: 0;
+  width: 272px;
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: -0.7px;
   text-transform: uppercase;
+  text-align: justify;
   color: var(--color-fg);
 }
 
 .headline {
+  position: absolute;
+  left: 224px;
   margin: 0;
   width: 380px;
   font-family: var(--font-display);
@@ -77,10 +76,14 @@
   line-height: 36px;
   letter-spacing: -2px;
   text-transform: uppercase;
+  text-align: justify;
   color: var(--color-fg);
 }
 
 .body {
+  position: absolute;
+  left: 704px;
+  width: 542px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -98,7 +101,10 @@
 }
 
 .mediaGrid {
-  margin: 168px 28px 0;
+  position: absolute;
+  left: 28px;
+  top: 1652px;
+  width: 1414px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -130,24 +136,26 @@
   align-items: center;
   justify-content: center;
   padding: 10px 10px 10px 14px;
+  box-sizing: border-box;
 }
 
 .divider {
+  position: absolute;
+  left: 28px;
+  top: 3642px;
   width: 1414px;
   height: 1px;
-  margin: 168px auto 0;
   background: var(--color-divider);
 }
 
-.ourWork {
-  margin: 50px 28px 50px;
-}
-
 .ourWorkHead {
+  position: absolute;
+  left: 28px;
+  top: 3692px;
+  width: 1414px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 26px;
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: -0.7px;
@@ -162,7 +170,30 @@
 }
 
 .workGrid {
+  position: absolute;
+  left: 28px;
+  top: 3718px;
+  width: 1414px;
   display: grid;
   grid-template-columns: 701px 701px;
   gap: 12px;
+}
+
+.contactSection {
+  position: absolute;
+  left: 28px;
+  top: 4370px;
+  width: 1414px;
+}
+
+.footerWrap {
+  position: absolute;
+  left: 28px;
+  top: 4490px;
+  width: 1414px;
+}
+
+.footerWrap :global([class*='shell']) {
+  width: 1414px;
+  padding: 0;
 }

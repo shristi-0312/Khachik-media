@@ -5,24 +5,39 @@ import styles from './Header.module.css'
 
 type Props = {
   variant?: 'glass' | 'solid'
-  active?: 'projects' | 'about' | null
+  active?: 'films' | 'stills' | 'about' | null
 }
 
 export function Header({ variant = 'glass', active = null }: Props) {
   const { openContact } = useContact()
   const base = useBasePath()
 
+  function onCta() {
+    const form = document.getElementById('contact-strip')
+    if (form) {
+      form.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
+    openContact()
+  }
+
   return (
     <header className={`${styles.header} ${variant === 'solid' ? styles.solid : styles.glass}`}>
       <NavLink to={base || '/'} className={styles.logo} end>
-        KHACHIK MEDIA
+        <img src="/assets/header-logo.svg" alt="Khachik Media" width={146} height={50} />
       </NavLink>
       <nav className={styles.nav}>
         <NavLink
-          to={`${base}/projects`}
-          className={`${styles.navItem} ${active === 'projects' ? styles.active : ''}`}
+          to={`${base}/films`}
+          className={`${styles.navItem} ${active === 'films' ? styles.active : ''}`}
         >
-          Projects
+          Films
+        </NavLink>
+        <NavLink
+          to={`${base}/stills`}
+          className={`${styles.navItem} ${active === 'stills' ? styles.active : ''}`}
+        >
+          Stills
         </NavLink>
         <NavLink
           to={`${base}/about`}
@@ -31,8 +46,8 @@ export function Header({ variant = 'glass', active = null }: Props) {
           About
         </NavLink>
       </nav>
-      <button type="button" className={styles.cta} onClick={openContact}>
-        Start a project
+      <button type="button" className={styles.cta} onClick={onCta}>
+        Meri bhi video banado
       </button>
     </header>
   )

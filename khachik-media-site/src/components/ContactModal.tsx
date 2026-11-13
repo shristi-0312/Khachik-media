@@ -116,7 +116,11 @@ export function ContactModal() {
             />
           </label>
           <button type="submit" className={styles.submit}>
-            Book a demo
+            <img src="/assets/btn-chevron-left.svg" alt="" width={6} height={11} />
+            <span>Meri bhi video banadao</span>
+            <span className={styles.chevronRight}>
+              <img src="/assets/btn-chevron-right.svg" alt="" width={6} height={11} />
+            </span>
           </button>
           <label className={styles.consent}>
             <button

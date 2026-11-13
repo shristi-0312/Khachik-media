@@ -1,8 +1,10 @@
 import { lazy, Suspense } from 'react'
 import { Link } from 'react-router-dom'
 import { Artboard } from '../components/Artboard'
+import { ContactStrip } from '../components/ContactStrip'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
+import { LogoMarquee } from '../components/LogoMarquee'
 import { Wordmark } from '../components/Wordmark'
 import { ABOUT_BODY } from '../data/content'
 import { useBasePath } from '../hooks/useBasePath'
@@ -31,6 +33,10 @@ export function HomePage() {
           />
         </section>
 
+        <section className={styles.marqueeSection} aria-label="Clients">
+          <LogoMarquee />
+        </section>
+
         <section className={styles.about}>
           <div className={styles.aboutLeft}>
             <p className={styles.label}>About Khachik Media</p>
@@ -53,9 +59,13 @@ export function HomePage() {
           <Suspense fallback={<div className={styles.globeFallback} aria-hidden="true" />}>
             <HomeGlobe />
           </Suspense>
-          <Link to={`${base}/projects`} className={styles.viewAll}>
+          <Link to={`${base}/films`} className={styles.viewAll}>
             View all
           </Link>
+        </section>
+
+        <section className={styles.contactSection}>
+          <ContactStrip />
         </section>
 
         <Footer />

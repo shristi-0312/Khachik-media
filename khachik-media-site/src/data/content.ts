@@ -38,10 +38,10 @@ export type Project = {
 }
 
 export const CATEGORIES: { id: Category; label: string }[] = [
+  { id: 'short-forms', label: 'Short-forms' },
   { id: 'promotional', label: 'Promotional Events' },
   { id: 'corporate', label: 'Corporate Events' },
   { id: 'advertisements', label: 'Advertisements' },
-  { id: 'short-forms', label: 'Short-forms' },
 ]
 
 export const ABOUT_BODY = [

@@ -49,7 +49,7 @@
 
 .left {
   position: relative;
-  background: linear-gradient(to top, #ea1414 0%, #960000 50%, #0e0e0e 100%);
+  background: linear-gradient(to top, #cd001a 0%, #8d0000 50%, #0e0e0e 100%);
   height: 930px;
 }
 
@@ -210,12 +210,23 @@
 .submit {
   height: 42px;
   width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 16px;
   background: var(--color-red);
   color: var(--color-white);
   font-family: var(--font-mono);
   font-size: 14px;
   line-height: 20px;
   text-transform: uppercase;
+}
+
+.chevronRight {
+  display: flex;
+  align-items: center;
+  transform: scaleY(-1) rotate(180deg);
 }
 
 .consent {

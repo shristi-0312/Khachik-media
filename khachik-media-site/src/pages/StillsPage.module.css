@@ -1,0 +1,83 @@
+.page {
+  position: relative;
+  width: 1470px;
+  height: 5738px;
+  background: var(--color-page);
+}
+
+.intro {
+  position: absolute;
+  left: 50%;
+  top: 169px;
+  transform: translateX(-50%);
+  width: 1025px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 22px;
+  text-transform: uppercase;
+  color: var(--color-black);
+}
+
+.eyebrow {
+  margin: 0;
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: -0.7px;
+  line-height: normal;
+}
+
+.introRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 40px;
+  line-height: 36px;
+  letter-spacing: -2px;
+  white-space: nowrap;
+}
+
+.body {
+  margin: 0;
+  width: 542px;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  letter-spacing: -0.8px;
+  line-height: normal;
+  text-align: justify;
+}
+
+.masonry {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.tile {
+  position: absolute;
+  background: #ebebeb;
+  pointer-events: auto;
+}
+
+.bottom {
+  position: absolute;
+  left: 28px;
+  top: 5390px;
+  width: 1414px;
+  display: flex;
+  flex-direction: column;
+  gap: 50px;
+}
+
+.footerWrap :global([class*='shell']) {
+  width: 1414px;
+  padding: 0;
+}

@@ -1,0 +1,59 @@
+.corner {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.tl {
+  left: -1px;
+  top: -1px;
+}
+
+.bl {
+  left: -1px;
+  bottom: -1px;
+  transform: scaleY(-1);
+}
+
+.tr {
+  right: -1px;
+  top: -1px;
+  transform: scaleY(-1) rotate(180deg);
+}
+
+.br {
+  right: -1px;
+  bottom: -1px;
+  transform: rotate(180deg);
+}
+
+.edgeTop,
+.edgeBottom {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 8px;
+  pointer-events: none;
+  z-index: 2;
+  transform: translateX(-50%);
+}
+
+.edgeTop {
+  top: -1px;
+}
+
+.edgeTop img {
+  transform: rotate(90deg);
+}
+
+.edgeBottom {
+  bottom: -1px;
+}
+
+.edgeBottom img {
+  transform: rotate(-90deg);
+}

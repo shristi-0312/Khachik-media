@@ -1,0 +1,85 @@
+.form {
+  display: flex;
+  align-items: flex-end;
+  gap: 24px;
+  width: 1414px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+  width: 250px;
+  flex: none;
+}
+
+.idea {
+  width: 474px;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 20px;
+  color: rgba(0, 0, 0, 0.5);
+  text-transform: uppercase;
+  width: 100%;
+}
+
+.input {
+  width: 100%;
+  height: 42px;
+  padding: 10px 16px;
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.02);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-black);
+  text-transform: uppercase;
+  outline: none;
+}
+
+.inputPhone {
+  border-color: rgba(0, 0, 0, 0.04);
+}
+
+.input::placeholder {
+  color: rgba(0, 0, 0, 0.5);
+  text-transform: uppercase;
+}
+
+.idea .input::placeholder {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.submit {
+  flex: none;
+  width: 368px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--color-red);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-white);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.submit img {
+  display: block;
+  flex: none;
+}
+
+.chevronRight {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: scaleY(-1) rotate(180deg);
+}

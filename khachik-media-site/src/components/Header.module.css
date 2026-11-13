@@ -17,9 +17,9 @@
 }
 
 .solid {
-  background: var(--color-glass);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
+  background: #000000;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .logo {
@@ -27,28 +27,25 @@
   left: 0;
   top: 50%;
   transform: translateY(-50%);
+  width: 146px;
   height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 28px;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 20px;
-  letter-spacing: -1px;
-  color: var(--color-white);
-  text-transform: uppercase;
-  white-space: nowrap;
+  display: block;
+}
+
+.logo img {
+  display: block;
+  width: 146px;
+  height: 50px;
 }
 
 .nav {
   position: absolute;
-  left: 243px;
+  left: 50%;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 52px;
 }
 
 .navItem {
@@ -81,7 +78,7 @@
   align-items: center;
   justify-content: center;
   padding: 10px 28px;
-  background: var(--color-ink);
+  background: var(--color-red);
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: -0.7px;
