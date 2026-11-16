@@ -206,7 +206,6 @@ export function HomeGlobe({
             onSelect={onSelect}
             onReadout={onReadout}
             allowPageScroll
-            scrollProgressRef={scrollProgressRef}
           />
         </Canvas>
       ) : null}
