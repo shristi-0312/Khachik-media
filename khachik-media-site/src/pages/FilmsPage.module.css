@@ -1,11 +1,13 @@
 .page {
-  width: 1470px;
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
   background: var(--color-page);
 }
 
 .hero {
   position: relative;
-  height: calc(100dvh / var(--artboard-scale, 1));
+  height: var(--screen-h);
   background: var(--color-red);
   overflow: hidden;
 }
@@ -21,14 +23,14 @@
 .heroCopy {
   position: absolute;
   left: 50%;
-  bottom: calc(48px / var(--artboard-scale, 1));
+  bottom: clamp(28px, 5vh, 48px);
   transform: translateX(-50%);
   z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: calc(12px / var(--artboard-scale, 1));
-  width: min(420px, 90%);
+  gap: 12px;
+  width: min(420px, calc(100% - 2 * var(--gutter)));
 }
 
 .kicker {
@@ -55,11 +57,12 @@
 
 .filters {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 32px;
-  margin-top: 100px;
-  /* Figma filter row is 10px tall for layout, but labels are 14px — don't clip */
+  gap: 16px 32px;
+  margin-top: clamp(48px, 7vw, 100px);
+  padding: 0 var(--gutter);
   min-height: 14px;
 }
 
@@ -81,32 +84,49 @@
 }
 
 .grid {
-  margin: 40px 28px 0;
+  margin: 40px var(--gutter) 0;
   display: grid;
 }
 
 .gridHorizontal {
-  grid-template-columns: 701px 701px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   column-gap: 12px;
   row-gap: 40px;
   margin-bottom: 50px;
 }
 
-/* Figma Projects / Vertical 118:3293 — 463×3, gap 13 */
 .gridVertical {
-  grid-template-columns: 463px 463px 463px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   column-gap: 13px;
   row-gap: 40px;
   margin-bottom: 50px;
 }
 
-/* Figma Toggle 118:3199 — centered between grid and contact strip */
 .pager {
   display: flex;
   justify-content: center;
-  margin: 0 0 200px;
+  margin: 0 0 clamp(80px, 12vw, 200px);
 }
 
 .contactSection {
-  margin-bottom: 50px;
+  margin: 0 var(--gutter) 50px;
+}
+
+@media (max-width: 1023px) {
+  .gridVertical {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 719px) {
+  .gridHorizontal,
+  .gridVertical {
+    grid-template-columns: 1fr;
+    row-gap: 32px;
+  }
+
+  .filters {
+    gap: 12px 20px;
+    justify-content: flex-start;
+  }
 }

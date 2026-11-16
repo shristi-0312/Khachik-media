@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Artboard } from '../components/Artboard'
 import { Footer } from '../components/Footer'
@@ -7,16 +8,50 @@ import { useBasePath } from '../hooks/useBasePath'
 import styles from './ProjectDetailPage.module.css'
 
 function LoopingVideo({ src, className }: { src: string; className?: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const [playing, setPlaying] = useState(false)
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    const paintFrame = () => {
+      if (playing) return
+      video.pause()
+      if (video.currentTime < 0.05) video.currentTime = 0.001
+    }
+
+    video.addEventListener('loadeddata', paintFrame)
+    return () => video.removeEventListener('loadeddata', paintFrame)
+  }, [playing, src])
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    if (playing) {
+      void video.play().catch(() => {})
+      return
+    }
+
+    video.pause()
+    if (video.readyState >= 2) video.currentTime = 0
+  }, [playing, src])
+
   return (
     <video
+      ref={videoRef}
       className={className}
       src={src}
-      autoPlay
       muted
       loop
       playsInline
       preload="metadata"
       aria-hidden="true"
+      onPointerEnter={(e) => {
+        if (e.pointerType === 'mouse') setPlaying(true)
+      }}
+      onPointerLeave={() => setPlaying(false)}
     />
   )
 }

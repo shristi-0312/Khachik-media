@@ -1,13 +1,5 @@
-.outer {
+.shell {
   width: 100%;
-  display: flex;
-  justify-content: center;
-  overflow: hidden;
+  min-height: 100%;
   background: var(--color-shell);
-}
-
-.inner {
-  width: 1470px;
-  transform-origin: top center;
-  flex-shrink: 0;
 }

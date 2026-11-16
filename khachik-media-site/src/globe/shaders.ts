@@ -1,103 +1,207 @@
-/**
- * Both materials share one idea: the geometry lives on a sphere centred at the
- * group origin, so the outward normal is just normalize(position). Its view-space
- * z tells us how squarely a fragment faces the camera, and that drives the fade
- * toward the silhouette.
- */
+import { FIELD } from './config'
 
-export const tileVertex = /* glsl */ `
-  varying vec2 vUv;
-  varying float vFacing;
-  void main() {
-    vUv = uv;
-    vec3 n = normalize(normalMatrix * normalize(position));
-    vFacing = n.z;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+/**
+ * Three passes, back to front: the lattice, the boards, the grain.
+ *
+ * The lattice and the boards evaluate ONE function — `sphere()` below, the
+ * projection described in projection.ts — so a board's edge and the gridline
+ * under it are the same curve rather than two opinions about it. Nothing here
+ * uses a camera: vertices go straight from stage px to clip space.
+ *
+ * Colours are written as display (sRGB) values and textures are sampled
+ * unconverted, so no colour-space chunk is included.
+ */
+const SPHERE = /* glsl */ `
+  #define HALF_PI 1.5707963267948966
+
+  uniform vec3 uSphere; // cx, cy, R — stage px
+  uniform vec2 uView;   // stage w, h — px
+
+  /* surface angles → stage px (xy) and facing (z) */
+  vec3 sphere(vec2 a) {
+    vec2 c = clamp(a, -HALF_PI, HALF_PI);
+    float cv = cos(c.y);
+    return vec3(
+      uSphere.x + uSphere.z * cv * sin(c.x),
+      uSphere.y + uSphere.z * sin(c.y),
+      cv * cos(a.x)
+    );
+  }
+
+  vec4 toClip(vec2 px) {
+    return vec4(px.x / uView.x * 2.0 - 1.0, 1.0 - px.y / uView.y * 2.0, 0.0, 1.0);
+  }
+
+  /* the flanks' light — the surface darkens as it turns sideways */
+  float flank(float u) {
+    return mix(1.0 - ${FIELD.flankDepth.toFixed(3)}, 1.0, smoothstep(0.0, 1.0, cos(u)));
   }
 `
 
-export const tileFragment = /* glsl */ `
-  uniform sampler2D uMap;
-  uniform float uDim;   // 1 when another cluster is hovered
-  uniform float uHover; // 1 when this cluster is hovered
-  uniform float uTileAspect;
-  uniform float uVideoAspect; // 0 until metadata — then object-fit: cover
-  varying vec2 vUv;
-  varying float vFacing;
+/* --------------------------------- lattice -------------------------------- */
 
-  vec2 coverUv(vec2 uv) {
-    if (uVideoAspect < 0.01 || uTileAspect < 0.01) return uv;
-    float sx = 1.0;
-    float sy = 1.0;
-    if (uVideoAspect > uTileAspect) {
-      sx = uTileAspect / uVideoAspect;
-    } else {
-      sy = uVideoAspect / uTileAspect;
-    }
-    return vec2(uv.x * sx + (1.0 - sx) * 0.5, uv.y * sy + (1.0 - sy) * 0.5);
-  }
-
-  void main() {
-    vec4 c = texture2D(uMap, coverUv(vUv));
-    // Gentle limb darkening — keep footage bright and crisp on-face.
-    float shade = mix(0.62, 1.0, smoothstep(-0.05, 0.72, vFacing));
-    c.rgb *= shade;
-    c.rgb = mix(c.rgb, c.rgb * 0.48, uDim);
-    c.rgb *= 1.0 + 0.08 * uHover;
-    gl_FragColor = c;
-  }
-`
-
-/**
- * Cream lattice + Griflan-style cursor scan:
- * every meridian/parallel near the pointer tints toward brand red with a
- * soft gaussian falloff — not a single hard crosshair.
- */
 export const latticeVertex = /* glsl */ `
-  varying float vFacing;
-  varying float vLat;
-  varying float vLon;
+  ${SPHERE}
+
+  uniform vec2 uLat;   // latitude drawn: from, to — radians
+  uniform vec2 uPhase; // the content's offset under the mesh, cells (fractional part)
+  uniform float uCell; // lattice step, px
+
+  varying vec2 vLine;  // FLAT position in cells — the fragment rules it square
+  varying float vFace;
+  varying float vShade;
+
   void main() {
-    vec3 p = normalize(position);
-    vLat = asin(clamp(p.y, -1.0, 1.0));
-    vLon = atan(p.x, p.z);
-    vec3 n = normalize(normalMatrix * p);
-    vFacing = n.z;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    vec2 a = vec2((uv.x - 0.5) * 2.0 * HALF_PI, mix(uLat.x, uLat.y, uv.y));
+    vec3 s = sphere(a);
+
+    vLine = a * uSphere.z / uCell + uPhase;
+    vFace = s.z;
+    vShade = flank(a.x);
+    gl_Position = toClip(s.xy);
   }
 `
 
 export const latticeFragment = /* glsl */ `
-  uniform vec3 uColor;
-  uniform vec3 uHoverColor;
-  uniform float uAlpha;
-  uniform float uHoverAlpha;
-  uniform float uHoverLat;
-  uniform float uHoverLon;
-  uniform float uHoverOn;   // 0..1
-  uniform float uFalloff;   // radians
-  varying float vFacing;
-  varying float vLat;
-  varying float vLon;
+  #define TRAIL ${FIELD.trailSamples}
 
-  float angDist(float lat0, float lon0, float lat1, float lon1) {
-    float dLon = abs(atan(sin(lon1 - lon0), cos(lon1 - lon0)));
-    float dLat = abs(lat1 - lat0);
-    // Local surface distance ≈ √((R·dLat)² + (R·cos(lat)·dLon)²) / R
-    float x = dLon * max(cos(lat0), 0.25);
-    return sqrt(dLat * dLat + x * x);
+  uniform vec3 uInk;
+  uniform vec3 uAccent;
+  uniform float uAlpha;
+  uniform float uRing;
+  uniform float uHalf;         // line half-width, device px
+  uniform vec4 uTrail[TRAIL];  // xy device px (gl_FragCoord space), z strength
+  uniform float uReach;        // device px
+
+  varying vec2 vLine;
+  varying float vFace;
+  varying float vShade;
+
+  /*
+   * One family of lines, as COVERAGE against its own screen-space derivative:
+   * d / fwidth is the distance to the line in pixels, so the stroke is a solid
+   * core with one pixel of ramp however hard the projection squeezes it. Where
+   * the cells fall under a pixel or so the family fades out instead of
+   * washing to a solid.
+   */
+  float lines(float x, float w) {
+    float d = abs(fract(x - 0.5) - 0.5);
+    float width = fwidth(x);
+    float a = clamp(w - d / width + 0.5, 0.0, 1.0);
+    return a * (1.0 - smoothstep(0.6, 1.8, width));
   }
 
   void main() {
-    float face = smoothstep(-0.05, 0.5, vFacing);
-    float d = angDist(uHoverLat, uHoverLon, vLat, vLon);
-    // Soft red Griflan scan — wide, luminous falloff under the cursor.
-    float glow = uHoverOn * exp(-(d * d) / (uFalloff * uFalloff));
-    glow = pow(glow, 0.78);
-    vec3 col = mix(uColor, uHoverColor, clamp(glow * 1.15, 0.0, 1.0));
-    float a = mix(uAlpha, uHoverAlpha, glow) * face;
-    a = min(1.0, a * (1.0 + glow * 0.85));
-    if (a < 0.01) discard;
-    gl_FragColor = vec4(col, a);
+    float meridian = lines(vLine.x, uHalf);
+    float ring = lines(vLine.y, uHalf) * uRing;
+
+    /* two crossing strokes, combined as coverage rather than max() */
+    float cover = (1.0 - (1.0 - meridian) * (1.0 - ring)) * vShade;
+    float face = smoothstep(0.0, 0.05, vFace);
+    float alpha = cover * uAlpha * face;
+
+    /* the pointer's wake: lines it has passed run to the accent and lift
+       toward full strength. Nothing is tinted where the pointer has not been. */
+    float amt = 0.0;
+    for (int i = 0; i < TRAIL; i++) {
+      vec2 d = gl_FragCoord.xy - uTrail[i].xy;
+      amt += uTrail[i].z * exp(-dot(d, d) / (uReach * uReach));
+    }
+    amt = smoothstep(0.0, 1.0, clamp(amt, 0.0, 1.0));
+
+    vec3 rgb = mix(uInk, uAccent, amt);
+    alpha = mix(alpha, cover * face, amt * 0.85);
+
+    gl_FragColor = vec4(rgb, alpha);
+  }
+`
+
+/* ---------------------------------- boards -------------------------------- */
+
+export const boardVertex = /* glsl */ `
+  ${SPHERE}
+
+  uniform vec4 uRect; // left, top, width, height — surface px from the centre meridian / equator
+
+  varying vec2 vUv;   // top-left origin
+  varying float vFade;
+  varying float vShade;
+
+  void main() {
+    vUv = vec2(uv.x, 1.0 - uv.y);
+
+    /* every vertex is plastered: it lands where the projection says, so the
+       board's edges hug the meridians and rings they were laid out on */
+    vec2 a = (uRect.xy + vUv * uRect.zw) / uSphere.z;
+    vec3 s = sphere(a);
+
+    vFade = smoothstep(${FIELD.fadeFrom.toFixed(3)}, ${FIELD.fadeTo.toFixed(3)}, s.z);
+    vShade = flank(a.x);
+    gl_Position = toClip(s.xy);
+  }
+`
+
+export const boardFragment = /* glsl */ `
+  uniform sampler2D uMap;     // the still — or a reel's poster frame
+  uniform sampler2D uOver;    // the reel itself, dissolved in over it
+  uniform float uMapAspect;   // picture w / h — 0 until known
+  uniform float uOverAspect;
+  uniform float uMix;         // 0 = uMap, 1 = uOver
+  uniform float uBoardAspect; // board w / h on the flat grid
+  uniform float uOpacity;
+  uniform float uDim;         // 0..1 — sunk toward the ground
+  uniform float uLift;        // 0..1 — hovered
+  uniform vec3 uGround;
+
+  varying vec2 vUv;
+  varying float vFade;
+  varying float vShade;
+
+  /* object-fit: cover, centre-cropped */
+  vec2 coverUv(vec2 uv, float aspect) {
+    if (aspect <= 0.0) return uv;
+    float k = uBoardAspect / aspect;
+    return k < 1.0
+      ? vec2((uv.x - 0.5) * k + 0.5, uv.y)
+      : vec2(uv.x, (uv.y - 0.5) / k + 0.5);
+  }
+
+  void main() {
+    vec3 rgb = texture2D(uMap, coverUv(vUv, uMapAspect)).rgb;
+    if (uMix > 0.001) {
+      rgb = mix(rgb, texture2D(uOver, coverUv(vUv, uOverAspect)).rgb, uMix);
+    }
+
+    rgb *= vShade;
+    rgb *= 1.0 + ${FIELD.hoverLift.toFixed(3)} * uLift;
+    rgb = mix(rgb, uGround, uDim);
+
+    gl_FragColor = vec4(rgb, uOpacity * vFade);
+  }
+`
+
+/* ---------------------------------- grain --------------------------------- */
+
+export const grainVertex = /* glsl */ `
+  void main() {
+    gl_Position = vec4(position.xy, 0.0, 1.0);
+  }
+`
+
+export const grainFragment = /* glsl */ `
+  uniform float uSeed;
+  uniform float uAmount;
+  uniform float uScale; // device px per grain
+
+  float hash(vec2 p) {
+    vec3 q = fract(vec3(p.xyx) * 0.1031);
+    q += dot(q, q.yzx + 33.33);
+    return fract((q.x + q.y) * q.z);
+  }
+
+  void main() {
+    vec2 p = floor(gl_FragCoord.xy / uScale);
+    float n = hash(p + uSeed * vec2(37.0, 17.0));
+    gl_FragColor = vec4(vec3(n), uAmount);
   }
 `

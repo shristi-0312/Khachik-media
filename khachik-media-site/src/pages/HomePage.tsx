@@ -7,7 +7,7 @@ import { GlobeScrollStage } from '../components/GlobeScrollStage'
 import { Header } from '../components/Header'
 import { LogoMarquee } from '../components/LogoMarquee'
 import { Wordmark } from '../components/Wordmark'
-import { ABOUT_BODY } from '../data/content'
+import { ABOUT_BODY, ABOUT_HEADLINE } from '../data/content'
 import { useBasePath } from '../hooks/useBasePath'
 import { HERO_CDN_URL, HERO_FALLBACK_URL } from '../media/cdn'
 import styles from './HomePage.module.css'
@@ -76,16 +76,18 @@ export function HomePage() {
           <div className={styles.aboutLeft}>
             <p className={styles.label}>About Khachik Media</p>
             <h2 className={styles.headline}>
-              We are all about
-              <br />
-              humane content &amp;
-              <br />
-              holding attention
+              {ABOUT_HEADLINE.map((line) => (
+                <span key={line}>{line}</span>
+              ))}
             </h2>
           </div>
           <div className={styles.aboutRight}>
-            {ABOUT_BODY.map((p) => (
-              <p key={p.slice(0, 24)}>{p}</p>
+            {ABOUT_BODY.map((paragraph) => (
+              <p key={paragraph[0]}>
+                {paragraph.map((line) => (
+                  <span key={line}>{line}</span>
+                ))}
+              </p>
             ))}
             <Link to={`${base}/about`} className={styles.more}>
               <span>More about us</span>

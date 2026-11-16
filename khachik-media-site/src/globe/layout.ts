@@ -1,113 +1,76 @@
-import { GLOBE, clusterPitch } from './config'
+import { FIELD, type BoardKind } from './config'
 
 /**
- * A tile's place on the sphere, in surface units (arc length).
- * u along the equator, v toward the poles; centre ± w/2, ± h/2.
+ * A board's place on the flat grid, in whole lattice cells — so its four
+ * edges ARE lattice lines, before and after the projection.
  */
-export interface TileSlot {
-  id: string
-  clusterIndex: number
-  projectIndex: number
-  tileIndex: number
-  u: number
-  v: number
+export interface Slot {
+  id: number
+  kind: BoardKind
+  /** Left / top edge and size, cells. */
+  x: number
+  y: number
   w: number
   h: number
-  orientation: 'horizontal' | 'vertical'
+  /** The distance round the ball after which the layout repeats, cells. */
+  period: number
 }
 
-export interface ClusterSlot {
-  clusterIndex: number
-  projectIndex: number
-  u: number
-  v: number
-  orientation: 'horizontal' | 'vertical'
-  shape: string
-}
-
-export interface Layout {
-  tiles: TileSlot[]
-  clusters: ClusterSlot[]
-}
-
-/** Alternating board accent — all boards are 2×2; flag kept for palette variety. */
-export function orientationForCluster(clusterIndex: number): 'horizontal' | 'vertical' {
-  return clusterIndex % 2 === 0 ? 'horizontal' : 'vertical'
+export interface FieldLayout {
+  slots: Slot[]
+  /** Vertical period, cells. */
+  rows: number
+  /** Identity of the layout — unchanged across resizes that need no more boards. */
+  key: string
 }
 
 /**
- * Griflan-style 2×2 collage — four unit cells, edges on the lattice.
+ * One grid of equal columns and equal gaps.
+ *
+ * Each band is a row of columns, `pitchX` apart; a column is either one tall
+ * board or two landscape boards stacked with the gutter between them — the
+ * same height either way — so every gap on the field, across or down, is
+ * exactly the gutter. Every `tallEvery`-th column is a tall one, and each band
+ * starts the pattern one column further on, so tall boards step diagonally
+ * across the field instead of piling up.
+ *
+ * `minCols` / `minRows` are what the stage can show at once (cells): the
+ * periods are rounded UP past them, so a board never appears twice in one
+ * frame, and are whole cell counts, so a wrapped copy lands on the gridlines
+ * it left.
  */
-export function boardTiles(clusterIndex: number): { tileIndex: number; aspect: number; area: number }[] {
-  void clusterIndex
-  const { tileW: W, tileH: H } = GLOBE
-  return Array.from({ length: 4 }, (_, tileIndex) => ({
-    tileIndex,
-    aspect: W / H,
-    area: W * H,
-  }))
-}
+export function buildLayout(minCols: number, minRows: number): FieldLayout {
+  const wide = FIELD.landscape
+  const tall = FIELD.portrait
+  const gap = FIELD.gutter
+  const every = FIELD.tallEvery
 
-export function shapeForCluster(clusterIndex: number): string {
-  return orientationForCluster(clusterIndex)
-}
+  const pitchX = wide.cols + gap
+  const pitchY = tall.rows + gap
 
-/**
- * Staggered grid of 2×2 boards. Each board’s four tiles sit on unit-cell centres
- * so every edge snaps to a meridian / parallel.
- */
-export function buildLayout(projectCount: number): Layout {
-  const { gridCols, gridRows, staggerOddRows, tileW, tileH, clusterCols, clusterRows } = GLOBE
-  const { pitchX, pitchY } = clusterPitch()
+  // Whole repeats of the tall-column pattern, so it meets itself cleanly at the seam.
+  const columns = Math.max(2, Math.ceil(minCols / pitchX / every)) * every
+  const bands = Math.max(2, Math.ceil(minRows / pitchY))
+  const period = columns * pitchX
 
-  const tiles: TileSlot[] = []
-  const clusters: ClusterSlot[] = []
+  const slots: Slot[] = []
+  const add = (kind: BoardKind, x: number, y: number) => {
+    const size = kind === 'L' ? wide : tall
+    slots.push({ id: slots.length, kind, x, y, w: size.cols, h: size.rows, period })
+  }
 
-  // Align board centre so a 2×2 lands on integer lattice lines.
-  const alignU = 0.5 * tileW
-  const alignV = 0.5 * tileH
-
-  let clusterIndex = 0
-  for (let r = 0; r < gridRows; r++) {
-    for (let c = 0; c < gridCols; c++) {
-      const stagger = staggerOddRows && r % 2 === 1 ? pitchX / 2 : 0
-      const slotU = c * pitchX + stagger + alignU
-      const slotV = (r - (gridRows - 1) / 2) * pitchY + alignV
-      const projectIndex = clusterIndex % projectCount
-      const orientation = orientationForCluster(clusterIndex)
-
-      clusters.push({
-        clusterIndex,
-        projectIndex,
-        u: slotU,
-        v: slotV,
-        orientation,
-        shape: '2x2',
-      })
-
-      // 2×2 unit cells around the board centre.
-      let tileIndex = 0
-      for (let row = 0; row < clusterRows; row++) {
-        for (let col = 0; col < clusterCols; col++) {
-          const du = (col - (clusterCols - 1) / 2) * tileW
-          const dv = ((clusterRows - 1) / 2 - row) * tileH
-          tiles.push({
-            id: `${clusterIndex}-${tileIndex}`,
-            clusterIndex,
-            projectIndex,
-            tileIndex,
-            u: slotU + du,
-            v: slotV + dv,
-            w: tileW,
-            h: tileH,
-            orientation,
-          })
-          tileIndex++
-        }
+  for (let b = 0; b < bands; b++) {
+    const top = b * pitchY
+    for (let i = 0; i < columns; i++) {
+      const x = i * pitchX
+      if ((i + b) % every === 1) {
+        add('P', x, top)
+      } else {
+        add('L', x, top)
+        add('L', x, top + wide.rows + gap)
       }
-      clusterIndex++
     }
   }
 
-  return { tiles, clusters }
+  return { slots, rows: bands * pitchY, key: `${bands}x${columns}` }
 }

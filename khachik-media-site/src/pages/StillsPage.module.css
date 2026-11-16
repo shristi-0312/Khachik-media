@@ -1,18 +1,14 @@
 .page {
-  position: relative;
-  width: 1470px;
-  height: 5738px;
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
   background: var(--color-page);
-  /* Figma bleeds tiles past the right edge (x=1443) */
-  overflow: visible;
+  overflow: hidden;
 }
 
 .intro {
-  position: absolute;
-  left: 50%;
-  top: 169px;
-  transform: translateX(-50%);
-  width: 1025px;
+  width: min(1025px, calc(100% - 2 * var(--gutter)));
+  margin: clamp(100px, 14vh, 169px) auto 0;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -34,6 +30,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  gap: 40px;
   width: 100%;
 }
 
@@ -41,45 +38,100 @@
   margin: 0;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 40px;
-  line-height: 36px;
-  letter-spacing: -2px;
-  white-space: nowrap;
+  font-size: clamp(32px, 4vw, 40px);
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+  flex: none;
 }
 
 .body {
   margin: 0;
-  width: 542px;
+  max-width: 542px;
+  flex: 1;
+  min-width: 0;
   font-family: var(--font-mono);
-  font-size: 16px;
-  letter-spacing: -0.8px;
-  line-height: normal;
+  font-size: clamp(14px, 1.2vw, 16px);
+  letter-spacing: -0.05em;
+  line-height: 1.25;
   text-align: justify;
 }
 
 .masonry {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
+  width: calc(100% - 2 * var(--gutter));
+  margin: clamp(48px, 8vw, 120px) auto 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .tile {
-  position: absolute;
+  position: relative;
   background: #ebebeb;
-  pointer-events: auto;
+  overflow: hidden;
+  aspect-ratio: 345 / 460;
+  min-height: 0;
+}
+
+.tile.wide {
+  grid-column: span 2;
+  aspect-ratio: 701 / 460;
+}
+
+.tile.tall {
+  aspect-ratio: 345 / 460;
+}
+
+.tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .bottom {
-  position: absolute;
-  left: 28px;
-  top: 5390px;
-  width: 1414px;
+  width: calc(100% - 2 * var(--gutter));
+  margin: clamp(64px, 8vw, 120px) auto 0;
   display: flex;
   flex-direction: column;
   gap: 50px;
+  padding-bottom: var(--gutter);
 }
 
 .footerWrap :global([class*='shell']) {
-  width: 1414px;
+  width: 100%;
+  max-width: none;
   padding: 0;
+}
+
+@media (max-width: 1023px) {
+  .masonry {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tile.wide {
+    grid-column: span 2;
+  }
+
+  .introRow {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .body {
+    max-width: none;
+    text-align: left;
+  }
+}
+
+@media (max-width: 719px) {
+  .masonry {
+    grid-template-columns: 1fr;
+  }
+
+  .tile,
+  .tile.wide,
+  .tile.tall {
+    grid-column: span 1;
+    aspect-ratio: 4 / 5;
+  }
 }

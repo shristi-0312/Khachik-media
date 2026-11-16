@@ -21,6 +21,12 @@ li {
   text-box-edge: cap alphabetic;
 }
 
+html {
+  /* Phones must not inflate text when turned sideways. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 html,
 body,
 #root {
@@ -59,34 +65,8 @@ img {
   max-width: 100%;
 }
 
-.artboard {
-  width: var(--artboard);
-  margin: 0 auto;
-  position: relative;
-  background: var(--color-page);
-  overflow: clip;
-}
-
 /* Black Figma icons → white on dark */
 [data-theme='dark'] img[src='/assets/arrow-union.svg'],
 [data-theme='dark'] img[src='/assets/chevron-left.svg'] {
   filter: invert(1);
-}
-
-.mono {
-  font-family: var(--font-mono);
-  text-transform: uppercase;
-  letter-spacing: -0.05em;
-}
-
-.display {
-  font-family: var(--font-display);
-  text-transform: uppercase;
-}
-
-@media (max-width: 1470px) {
-  .artboard-scale-wrap {
-    width: 100%;
-    overflow-x: auto;
-  }
 }

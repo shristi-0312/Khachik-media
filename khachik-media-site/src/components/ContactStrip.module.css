@@ -1,8 +1,10 @@
 .form {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   gap: 24px;
-  width: 1414px;
+  width: 100%;
+  max-width: var(--content-max);
 }
 
 .field {
@@ -11,11 +13,12 @@
   align-items: flex-start;
   gap: 18px;
   width: 250px;
-  flex: none;
+  flex: 1 1 180px;
+  min-width: 0;
 }
 
 .idea {
-  width: 474px;
+  flex: 2 1 280px;
 }
 
 .label {
@@ -39,6 +42,7 @@
   color: var(--color-black);
   text-transform: uppercase;
   outline: none;
+  box-sizing: border-box;
 }
 
 .inputPhone {
@@ -50,17 +54,10 @@
   text-transform: uppercase;
 }
 
-.idea .input::placeholder {
-  color: rgba(0, 0, 0, 0.5);
-}
-
-/*
- * Figma Button Default → Hover (ON_HOVER, Smart Animate Gentle ~767ms).
- * Gap 10 → 20 spreads the chevrons outward while the label stays centered.
- */
 .submit {
-  flex: none;
-  width: 368px;
+  flex: 1 1 240px;
+  min-width: min(100%, 240px);
+  max-width: 368px;
   height: 42px;
   display: flex;
   align-items: center;
@@ -93,4 +90,32 @@
   align-items: center;
   justify-content: center;
   transform: scaleY(-1) rotate(180deg);
+}
+
+@media (max-width: 1023px) {
+  .form {
+    gap: 20px;
+  }
+
+  .submit {
+    max-width: none;
+    width: 100%;
+  }
+}
+
+@media (max-width: 719px) {
+  .field,
+  .idea,
+  .submit {
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: none;
+  }
+
+  .submit {
+    white-space: normal;
+    text-align: center;
+    height: auto;
+    min-height: 48px;
+  }
 }

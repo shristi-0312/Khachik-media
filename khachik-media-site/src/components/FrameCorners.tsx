@@ -1,18 +1,16 @@
 import styles from './FrameCorners.module.css'
 
 type Props = {
-  /** Show the mid-edge ticks used on the footer logo divider */
+  /**
+   * Show the mid-edge ticks used on the footer logo divider. They sit at
+   * `--frame-edge-x` from the left, set by the frame they belong to.
+   */
   showEdges?: boolean
-  edgeOffset?: number
   /** Black on light surfaces (default); white for dark hero wordmarks */
   tone?: 'black' | 'white'
 }
 
-export function FrameCorners({
-  showEdges = false,
-  edgeOffset = 400,
-  tone = 'black',
-}: Props) {
+export function FrameCorners({ showEdges = false, tone = 'black' }: Props) {
   const toneClass = tone === 'white' ? styles.white : styles.black
 
   return (
@@ -23,14 +21,9 @@ export function FrameCorners({
       <span className={`${styles.corner} ${styles.br} ${toneClass}`} aria-hidden="true" />
       {showEdges ? (
         <>
-          <span
-            className={`${styles.edge} ${styles.edgeTop} ${toneClass}`}
-            style={{ left: edgeOffset }}
-            aria-hidden="true"
-          />
+          <span className={`${styles.edge} ${styles.edgeTop} ${toneClass}`} aria-hidden="true" />
           <span
             className={`${styles.edge} ${styles.edgeBottom} ${toneClass}`}
-            style={{ left: edgeOffset }}
             aria-hidden="true"
           />
         </>

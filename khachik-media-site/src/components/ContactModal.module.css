@@ -1,60 +1,45 @@
-/*
- * Figma Contact 118:3078 — 1470×832 one-screen frame (header 50 + card 782).
- * Scaled to fit the viewport; never scrolls.
- */
 .overlay {
   position: fixed;
   inset: 0;
   z-index: 100;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  /* Figma Contact hero 118:3079 */
+  flex-direction: column;
   background: #121212;
-  overflow: hidden;
-}
-
-/* Layout box = scaled size so transform does not cause overflow */
-.fit {
-  position: relative;
-  flex: none;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .shell {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 1470px;
-  height: 832px;
-  transform-origin: top left;
+  position: relative;
+  width: 100%;
+  min-height: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
   background: #121212;
+  display: flex;
+  flex-direction: column;
 }
 
 .card {
-  position: absolute;
-  left: 0;
-  top: 50px;
-  width: 1470px;
-  height: 782px;
+  flex: 1;
+  width: 100%;
+  min-height: calc(var(--screen-h) - var(--header-h));
   background: var(--color-white);
   display: grid;
-  grid-template-columns: 750px 1fr;
+  grid-template-columns: minmax(280px, 1.05fr) minmax(280px, 1fr);
   overflow: hidden;
 }
 
-/* Figma Frame 209 is 750×930, clipped by the 782 card */
 .left {
   position: relative;
-  height: 930px;
+  min-height: 100%;
   background: linear-gradient(to top, #cd001a 0%, #8d0000 50%, #0e0e0e 100%);
+  padding: clamp(40px, 8vw, 93px) clamp(24px, 6vw, 90px);
+  box-sizing: border-box;
 }
 
 .leftInner {
-  position: absolute;
-  left: 90px;
-  top: 93px;
-  width: 570px;
+  width: 100%;
+  max-width: 570px;
   display: flex;
   flex-direction: column;
   gap: 32px;
@@ -71,14 +56,14 @@
   margin: 0;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 56px;
-  line-height: 62px;
-  letter-spacing: -1.12px;
+  font-size: clamp(32px, 4.2vw, 56px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
 .sub {
   margin: 0;
-  width: 438px;
+  max-width: 438px;
   font-family: var(--font-mono);
   font-size: 16px;
   line-height: 24px;
@@ -88,20 +73,20 @@
 .testimonial {
   position: relative;
   width: 100%;
-  height: 372px;
+  min-height: 280px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.15);
   overflow: hidden;
+  padding: clamp(24px, 4vw, 52px);
+  box-sizing: border-box;
 }
 
 .testimonialInner {
-  position: absolute;
-  left: 52px;
-  top: 52px;
-  width: 466px;
+  width: 100%;
+  max-width: 466px;
   display: flex;
   flex-direction: column;
-  gap: 52px;
+  gap: 32px;
 }
 
 .quote {
@@ -129,25 +114,26 @@
 
 .testimonialNav {
   position: absolute;
-  left: 450px;
-  top: 288px;
+  right: 24px;
+  bottom: 24px;
   display: flex;
   gap: 4px;
 }
 
 .form {
-  width: 540px;
-  margin: 120px 0 0 90px;
-  padding: 32px;
+  width: 100%;
+  max-width: 540px;
+  margin: clamp(40px, 8vw, 120px) auto;
+  padding: 32px var(--gutter);
   border: 1px solid rgba(0, 0, 0, 0.04);
   background: rgba(0, 0, 0, 0.01);
   display: flex;
   flex-direction: column;
   gap: 0;
   box-sizing: border-box;
+  align-self: start;
 }
 
-/* Figma: 32px between field groups; 20px before button / consent */
 .form .field + .field {
   margin-top: 32px;
 }
@@ -188,6 +174,7 @@
   color: var(--color-black);
   text-transform: uppercase;
   resize: none;
+  box-sizing: border-box;
 }
 
 .field input {
@@ -204,9 +191,6 @@
   color: rgba(0, 0, 0, 0.5);
 }
 
-/*
- * Figma Button Default → Hover (ON_HOVER, Smart Animate Gentle ~767ms).
- */
 .submit {
   height: 42px;
   width: 100%;
@@ -238,7 +222,7 @@
 
 .consent {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   min-height: 42px;
 }
@@ -249,7 +233,8 @@
   line-height: 20px;
   color: rgba(0, 0, 0, 0.5);
   text-transform: uppercase;
-  width: 440px;
+  flex: 1;
+  min-width: 0;
 }
 
 .consent strong {
@@ -267,8 +252,31 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .checked {
   background: var(--color-red);
+}
+
+@media (max-width: 899px) {
+  .card {
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+
+  .left {
+    min-height: auto;
+  }
+
+  .form {
+    margin: 0 auto 48px;
+    border-left: 0;
+    border-right: 0;
+    max-width: none;
+  }
+
+  .testimonial {
+    min-height: 0;
+  }
 }

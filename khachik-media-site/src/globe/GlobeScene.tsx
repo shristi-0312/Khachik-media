@@ -1,487 +1,219 @@
-import { useEffect, useMemo, useRef, type MutableRefObject } from 'react'
-import * as THREE from 'three'
-import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { GLOBE, R } from './config'
-import { latticeGeometry, surfaceToSphere, tileGeometry } from './geometry'
-import type { Layout, TileSlot } from './layout'
-import { PROJECTS, type Project as GlobeProject } from './projects'
-import { latticeFragment, latticeVertex, tileFragment, tileVertex } from './shaders'
-import type { VideoPool } from './videoPool'
-
-export interface Readout {
-  /** Longitude (deg) at the left and right edges of the viewport. */
-  left: number
-  right: number
-}
+import { useEffect, useMemo, useRef } from 'react'
+import { useFrame, useThree } from '@react-three/fiber'
+import { Field } from './field'
+import type { FieldMedia } from './media'
+import type { MediaPool } from './mediaPool'
 
 export interface GlobeSceneProps {
-  layout: Layout
-  videos: VideoPool
-  /** HQ clip sources — defaults to local stock if omitted. */
-  projects?: GlobeProject[]
-  hoveredCluster: number | null
-  onHover: (clusterIndex: number | null, clientX: number, clientY: number) => void
-  onSelect: (clusterIndex: number) => void
-  onReadout?: (r: Readout) => void
-  /** When true (an overlay is open) input is ignored and the globe just drifts. */
-  frozen?: boolean
-  /**
-   * When true (home embed), vertical wheel / vertical gestures scroll the page.
-   * Drag still rotates; horizontal trackpad swipe still spins.
-   */
-  allowPageScroll?: boolean
+  pool: MediaPool
+  /** null until the library (or its fallback) has answered. */
+  media: FieldMedia[] | null
+  /** False while the stage is off screen: streams stop. */
+  active: boolean
+  /** Hovered board (or null) and the pointer's place on the stage, on-screen px. */
+  onHover: (media: FieldMedia | null, x: number, y: number) => void
+  onSelect: (media: FieldMedia) => void
+  /** Longitude under the stage's left and right edges, degrees. */
+  onReadout: (left: number, right: number) => void
+  onCursor: (cursor: 'grab' | 'grabbing' | 'pointer') => void
 }
 
-const FULL_UV = { x0: 0, x1: 1, vTop: 1, vBottom: 0 }
+/** Travel before a press becomes a drag, px. */
+const DRAG_SLOP = { mouse: 4, touch: 8 }
 
-const PLACEHOLDER_TEX = (() => {
-  const data = new Uint8Array([24, 22, 22, 255])
-  const t = new THREE.DataTexture(data, 1, 1)
-  t.colorSpace = THREE.SRGBColorSpace
-  t.needsUpdate = true
-  return t
-})()
-
-interface SpinState {
-  lon: number
-  tLon: number
-  pan: number
-  tPan: number
-  /** Current world→screen scale of the sphere (viewport-relative radius). */
-  scale: number
-  lastInput: number
+interface Press {
+  id: number
+  touch: boolean
+  x: number
+  y: number
   dragging: boolean
-  pointerId: number | null
-  lastX: number
-  lastY: number
 }
 
+/**
+ * The R3F side of the field: owns its lifetime, feeds it the canvas size and
+ * the pointer, and ticks it. All drawing and hit-testing is in `Field` — the
+ * boards are found by inverting the projection, not by raycasting.
+ */
 export function GlobeScene({
-  layout,
-  videos,
-  projects = PROJECTS,
-  hoveredCluster,
+  pool,
+  media,
+  active,
   onHover,
   onSelect,
   onReadout,
-  frozen,
-  allowPageScroll = false,
+  onCursor,
 }: GlobeSceneProps) {
-  const group = useRef<THREE.Group>(null)
-  const latticeMatRef = useRef<THREE.ShaderMaterial | null>(null)
-  const { gl, camera, size } = useThree()
+  const gl = useThree((s) => s.gl)
+  const size = useThree((s) => s.size)
+  const dpr = useThree((s) => s.viewport.dpr)
 
-  const spin = useRef<SpinState>({
-    lon: 0,
-    tLon: 0,
-    pan: GLOBE.panDefault * R,
-    tPan: GLOBE.panDefault * R,
-    scale: 1,
-    lastInput: -Infinity,
-    dragging: false,
-    pointerId: null,
-    lastX: 0,
-    lastY: 0,
+  const field = useMemo(() => new Field(pool), [pool])
+  useEffect(() => () => field.dispose(), [field])
+
+  const handlers = useRef({ onHover, onSelect, onReadout, onCursor })
+  useEffect(() => {
+    handlers.current = { onHover, onSelect, onReadout, onCursor }
   })
 
-  const frozenRef = useRef(!!frozen)
-  frozenRef.current = !!frozen
-  const pageScrollRef = useRef(allowPageScroll)
-  pageScrollRef.current = allowPageScroll
+  useEffect(() => {
+    pool.setAnisotropy(gl.capabilities.getMaxAnisotropy())
+  }, [gl, pool])
 
-  /** Pending pointer — only commit to drag after a clear horizontal intent. */
-  const pending = useRef<{
-    id: number
-    x: number
-    y: number
-  } | null>(null)
+  useEffect(() => {
+    field.resize(size.width, size.height, dpr)
+  }, [field, size.width, size.height, dpr])
 
-  /** Raw pointer on the sphere (target) + smoothed uniforms for the lattice glow. */
-  const hover = useRef({
-    tLat: 0,
-    tLon: 0,
-    tOn: 0,
-    lat: 0,
-    lon: 0,
-    on: 0,
-  })
+  useEffect(() => {
+    if (media) field.setMedia(media)
+  }, [field, media])
+
+  useEffect(() => {
+    if (!active) field.suspend()
+  }, [field, active])
+
+  useEffect(() => {
+    const calm = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const coarse = window.matchMedia('(pointer: coarse)')
+    const sync = () => {
+      field.setCalm(calm.matches)
+      field.setTouch(coarse.matches)
+    }
+    sync()
+    calm.addEventListener('change', sync)
+    coarse.addEventListener('change', sync)
+    return () => {
+      calm.removeEventListener('change', sync)
+      coarse.removeEventListener('change', sync)
+    }
+  }, [field])
 
   /* ---------------------------------- input --------------------------------- */
   useEffect(() => {
     const el = gl.domElement
-    const s = spin.current
+    let press: Press | null = null
+    let hovering = false
 
-    const onWheel = (e: WheelEvent) => {
-      if (frozenRef.current) return
+    const at = (e: MouseEvent) => {
+      const r = el.getBoundingClientRect()
+      return { x: e.clientX - r.left, y: e.clientY - r.top }
+    }
+    const cursor = () => {
+      handlers.current.onCursor(press?.dragging ? 'grabbing' : hovering ? 'pointer' : 'grab')
+    }
+    const report = (m: FieldMedia | null, x: number, y: number) => {
+      hovering = m !== null
+      handlers.current.onHover(m, x, y)
+      cursor()
+    }
 
-      if (pageScrollRef.current) {
-        // Vertical / mostly-vertical → let the page scroll anywhere over the globe.
-        if (Math.abs(e.deltaY) >= Math.abs(e.deltaX) * 0.85) return
-        e.preventDefault()
-        s.tLon -= e.deltaX * GLOBE.wheelSens
-        s.lastInput = performance.now()
+    const onDown = (e: PointerEvent) => {
+      if (e.button !== 0 || press) return
+      press = {
+        id: e.pointerId,
+        touch: e.pointerType === 'touch',
+        x: e.clientX,
+        y: e.clientY,
+        dragging: false,
+      }
+    }
+
+    const onMove = (e: PointerEvent) => {
+      const p = at(e)
+      if (e.pointerType !== 'touch') field.pointerAt(p.x, p.y)
+
+      if (press && e.pointerId === press.id) {
+        if (!press.dragging) {
+          const dx = e.clientX - press.x
+          const dy = e.clientY - press.y
+          if (Math.hypot(dx, dy) < (press.touch ? DRAG_SLOP.touch : DRAG_SLOP.mouse)) return
+          // A finger heading up or down is scrolling the page (touch-action: pan-y
+          // hands it to the browser); only a sideways one turns the field.
+          if (press.touch && Math.abs(dy) > Math.abs(dx)) {
+            press = null
+            return
+          }
+          press.dragging = true
+          // Taken hold of HERE, past the slop, so the field does not lurch to catch up.
+          // A mouse moves the rows as well; a finger only turns the ball.
+          field.grab(p.x, p.y, !press.touch)
+          try {
+            el.setPointerCapture(e.pointerId)
+          } catch {
+            /* synthetic events have no capturable pointer */
+          }
+          report(null, p.x, p.y)
+          return
+        }
+        field.dragTo(p.x, p.y, performance.now())
         return
       }
 
-      e.preventDefault()
-      const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
-      s.tLon -= d * GLOBE.wheelSens
-      s.lastInput = performance.now()
+      if (e.pointerType !== 'touch') report(field.hover(p.x, p.y), p.x, p.y)
     }
-    const onDown = (e: PointerEvent) => {
-      if (frozenRef.current || e.button !== 0) return
-      pending.current = { id: e.pointerId, x: e.clientX, y: e.clientY }
-      s.pointerId = e.pointerId
-      s.lastX = e.clientX
-      s.lastY = e.clientY
-      s.dragging = false
-    }
-    const onMove = (e: PointerEvent) => {
-      if (e.pointerId !== s.pointerId) return
 
-      // Decide drag vs page-scroll before capturing the pointer.
-      if (!s.dragging && pending.current && pending.current.id === e.pointerId) {
-        const dx0 = e.clientX - pending.current.x
-        const dy0 = e.clientY - pending.current.y
-        const dist = Math.hypot(dx0, dy0)
-        if (dist < 8) return
-        if (pageScrollRef.current && Math.abs(dy0) > Math.abs(dx0) * 1.15) {
-          // Vertical intent → abandon drag so the page can scroll.
-          pending.current = null
-          s.pointerId = null
-          return
-        }
-        s.dragging = true
-        pending.current = null
-        try {
-          el.setPointerCapture(e.pointerId)
-        } catch {
-          /* synthetic events have no capturable pointer */
-        }
-      }
-
-      if (!s.dragging) return
-      const dx = e.clientX - s.lastX
-      const dy = e.clientY - s.lastY
-      s.lastX = e.clientX
-      s.lastY = e.clientY
-      // Free orbit: drag spins longitude and tilts the camera.
-      s.tLon += dx * GLOBE.dragSens
-      s.tPan = THREE.MathUtils.clamp(
-        s.tPan + (dy * GLOBE.panDragSens) / s.scale,
-        GLOBE.panMin * R,
-        GLOBE.panMax * R,
-      )
-      s.lastInput = performance.now()
-    }
     const onUp = (e: PointerEvent) => {
-      if (e.pointerId !== s.pointerId) return
-      const wasDragging = s.dragging
-      s.dragging = false
-      s.pointerId = null
-      pending.current = null
-      if (wasDragging) s.lastInput = performance.now()
-      if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId)
+      if (!press || e.pointerId !== press.id) return
+      const dragged = press.dragging
+      press = null
+      if (dragged) {
+        field.release(performance.now())
+        if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId)
+        cursor()
+        return
+      }
+      const p = at(e)
+      const hit = field.pick(p.x, p.y)
+      if (hit) handlers.current.onSelect(hit)
     }
 
-    el.addEventListener('wheel', onWheel, { passive: false })
+    const onCancel = (e: PointerEvent) => {
+      if (!press || e.pointerId !== press.id) return
+      if (press.dragging) field.release(performance.now())
+      press = null
+      cursor()
+    }
+
+    const onLeave = (e: PointerEvent) => {
+      if (press?.dragging) return
+      field.pointerGone()
+      const p = at(e)
+      report(null, p.x, p.y)
+    }
+
+    const onWheel = (e: WheelEvent) => {
+      // Vertical wheel is the page's. Only a clearly sideways swipe turns the field.
+      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) * 1.2) return
+      e.preventDefault()
+      field.swipe(e.deltaX * (e.deltaMode === 1 ? 16 : 1))
+    }
+
+    cursor()
     el.addEventListener('pointerdown', onDown)
     el.addEventListener('pointermove', onMove)
     el.addEventListener('pointerup', onUp)
-    el.addEventListener('pointercancel', onUp)
+    el.addEventListener('pointercancel', onCancel)
+    el.addEventListener('pointerleave', onLeave)
+    el.addEventListener('wheel', onWheel, { passive: false })
     return () => {
-      el.removeEventListener('wheel', onWheel)
       el.removeEventListener('pointerdown', onDown)
       el.removeEventListener('pointermove', onMove)
       el.removeEventListener('pointerup', onUp)
-      el.removeEventListener('pointercancel', onUp)
+      el.removeEventListener('pointercancel', onCancel)
+      el.removeEventListener('pointerleave', onLeave)
+      el.removeEventListener('wheel', onWheel)
+      if (press?.dragging) field.release(performance.now())
     }
-  }, [gl])
+  }, [gl, field])
 
   /* ---------------------------------- frame --------------------------------- */
-  useFrame((_, dtRaw) => {
-    videos.tick()
-
-    const dt = Math.min(dtRaw, 0.05)
-    const s = spin.current
-    const idle = !s.dragging && performance.now() - s.lastInput > GLOBE.idleDelayMs
-    if (idle || frozenRef.current) s.tLon += GLOBE.driftRadPerSec * dt
-
-    s.lon = THREE.MathUtils.damp(s.lon, s.tLon, GLOBE.damping, dt)
-    s.pan = THREE.MathUtils.damp(s.pan, s.tPan, GLOBE.damping, dt)
-    const screenR = Math.min(GLOBE.radiusVw * size.width, GLOBE.radiusVh * size.height)
-    s.scale = THREE.MathUtils.clamp(screenR / R, GLOBE.scaleMin, GLOBE.scaleMax)
-
-    // Smooth Griflan-style cursor follow on the lattice.
-    const h = hover.current
-    const follow = GLOBE.hoverFollow
-    h.lat = THREE.MathUtils.damp(h.lat, h.tLat, follow, dt)
-    h.lon = THREE.MathUtils.damp(h.lon, h.tLon, follow, dt)
-    h.on = THREE.MathUtils.damp(h.on, h.tOn, follow, dt)
-    const mat = latticeMatRef.current
-    if (mat) {
-      mat.uniforms.uHoverLat.value = h.lat
-      mat.uniforms.uHoverLon.value = h.lon
-      mat.uniforms.uHoverOn.value = h.on
-    }
-
-    if (group.current) {
-      group.current.rotation.y = s.lon
-      group.current.scale.setScalar(s.scale)
-      group.current.position.y = 0
-    }
-    camera.position.y = s.pan * s.scale
-
-    // Keep cream lattice looking thicker across GPUs (lineWidth is often capped at 1).
-    try {
-      gl.getContext().lineWidth(GLOBE.latticeLineWidth)
-    } catch {
-      /* ignore */
-    }
-
-    if (onReadout) {
-      const half = Math.asin(Math.min(1, size.width / 2 / (R * s.scale))) * (180 / Math.PI)
-      const wrap = (deg: number) => ((((deg + 180) % 360) + 360) % 360) - 180
-      const centre = -s.lon * (180 / Math.PI)
-      onReadout({ left: wrap(centre - half), right: wrap(centre + half) })
-    }
-  })
-
-  /* --------------------------------- content -------------------------------- */
-  const lattice = useMemo(() => {
-    // Identical radius to tiles so edges meet lattice lines in screen space.
-    const geometry = latticeGeometry(R, GLOBE.latticeLatLimitDeg)
-    // ~2.6 cells of glow — matches Griflan’s tight cursor scan.
-    const falloff = (GLOBE.hoverRadiusCells * GLOBE.tileW) / R
-    const material = new THREE.ShaderMaterial({
-      vertexShader: latticeVertex,
-      fragmentShader: latticeFragment,
-      uniforms: {
-        uColor: { value: new THREE.Color(GLOBE.lattice) },
-        uHoverColor: { value: new THREE.Color(GLOBE.red) },
-        uAlpha: { value: GLOBE.latticeAlpha },
-        uHoverAlpha: { value: GLOBE.hoverLatticeAlpha },
-        uHoverLat: { value: 0 },
-        uHoverLon: { value: 0 },
-        uHoverOn: { value: 0 },
-        uFalloff: { value: falloff },
-      },
-      transparent: true,
-      depthWrite: false,
-      depthTest: true,
-      blending: THREE.NormalBlending,
-    })
-    latticeMatRef.current = material
-    return { geometry, material }
-  }, [])
-
-  useEffect(
-    () => () => {
-      lattice.geometry?.dispose()
-      lattice.material?.dispose()
-      latticeMatRef.current = null
-    },
-    [lattice],
-  )
-
-  /** Drive lattice glow from sphere / tile hit points (surface lat/lon). */
-  const setLatticeHover = (lat: number, lon: number, on: boolean) => {
-    const h = hover.current
-    if (on) {
-      h.tLat = lat
-      h.tLon = lon
-      h.tOn = 1
-    } else {
-      h.tOn = 0
-    }
-  }
-
-  const onHitSphere = (e: ThreeEvent<PointerEvent>) => {
-    if (frozenRef.current) return
-    const p = e.point.clone()
-    if (group.current) group.current.worldToLocal(p)
-    const len = p.length() || 1
-    const n = p.multiplyScalar(1 / len)
-    const lat = Math.asin(THREE.MathUtils.clamp(n.y, -1, 1))
-    const lon = Math.atan2(n.x, n.z)
-    setLatticeHover(lat, lon, true)
-  }
-
-  const onLeaveSphere = () => {
-    if (frozenRef.current) return
-    setLatticeHover(0, 0, false)
-  }
-
-  return (
-    <group ref={group}>
-      {/* Opaque inner sphere: hides the far side of the lattice and tiles. */}
-      <mesh>
-        <sphereGeometry args={[R - 1.5, 96, 64]} />
-        <meshBasicMaterial color={GLOBE.bg} />
-      </mesh>
-
-      {/* Invisible hit sphere for lattice hover when not over a tile. */}
-      <mesh
-        onPointerMove={onHitSphere}
-        onPointerOver={onHitSphere}
-        onPointerOut={onLeaveSphere}
-      >
-        <sphereGeometry args={[R - 0.15, 64, 48]} />
-        <meshBasicMaterial
-          transparent
-          opacity={0}
-          depthWrite={false}
-          colorWrite={false}
-          side={THREE.FrontSide}
-        />
-      </mesh>
-
-      {/* Cream lattice — cursor paints nearby lines brand-red (Griflan scan). */}
-      <lineSegments
-        geometry={lattice.geometry}
-        material={lattice.material}
-        renderOrder={1}
-      />
-
-      {layout.tiles.map((slot) => (
-        <Tile
-          key={slot.id}
-          slot={slot}
-          projects={projects}
-          videos={videos}
-          dim={hoveredCluster !== null && hoveredCluster !== slot.clusterIndex}
-          hover={hoveredCluster === slot.clusterIndex}
-          onHover={onHover}
-          onSelect={onSelect}
-          onLatticeHover={setLatticeHover}
-          spin={spin}
-          frozenRef={frozenRef}
-        />
-      ))}
-    </group>
-  )
-}
-
-/* ------------------------------------------------------------------------ */
-
-interface TileProps {
-  slot: TileSlot
-  projects: GlobeProject[]
-  videos: VideoPool
-  dim: boolean
-  hover: boolean
-  onHover: GlobeSceneProps['onHover']
-  onSelect: GlobeSceneProps['onSelect']
-  onLatticeHover: (lat: number, lon: number, on: boolean) => void
-  spin: MutableRefObject<SpinState>
-  frozenRef: MutableRefObject<boolean>
-}
-
-function Tile({
-  slot,
-  projects,
-  videos,
-  dim,
-  hover,
-  onHover,
-  onSelect,
-  onLatticeHover,
-  spin,
-  frozenRef,
-}: TileProps) {
-  const project = projects[slot.projectIndex]
-  const src =
-    project?.videos?.[slot.tileIndex] ??
-    project?.videos?.[0] ??
-    project?.images?.[slot.tileIndex] ??
-    project?.images?.[0] ??
-    ''
-  const phase = (slot.clusterIndex + slot.tileIndex) % 2
-
-  const geometry = useMemo(() => tileGeometry(slot, R, FULL_UV), [slot])
-
-  const texture = useMemo(() => {
-    if (!src) return PLACEHOLDER_TEX
-    return videos.textureFor(src, phase)
-  }, [videos, src, phase])
-
-  const material = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        vertexShader: tileVertex,
-        fragmentShader: tileFragment,
-        uniforms: {
-          uMap: { value: texture },
-          uDim: { value: 0 },
-          uHover: { value: 0 },
-          uTileAspect: { value: slot.w / slot.h },
-          uVideoAspect: { value: slot.w / slot.h },
-        },
-        // Prefer tiles over co-radial lattice so cream lines show only in gaps.
-        polygonOffset: true,
-        polygonOffsetFactor: -2,
-        polygonOffsetUnits: -2,
-        depthWrite: true,
-      }),
-    [texture, slot.w, slot.h],
-  )
-
-  useEffect(() => () => geometry.dispose(), [geometry])
-  useEffect(() => () => material.dispose(), [material])
-
   useFrame((_, dt) => {
-    const u = material.uniforms
-    u.uDim.value = THREE.MathUtils.damp(u.uDim.value, dim ? 1 : 0, 10, dt)
-    u.uHover.value = THREE.MathUtils.damp(u.uHover.value, hover ? 1 : 0, 10, dt)
-    if (src) u.uVideoAspect.value = videos.aspectFor(src, phase)
+    pool.warm(gl)
+    field.update(Math.min(dt, 0.05), performance.now())
+    // The longitudes passing under the stage's left and right edges, read at
+    // mid-height — the top corners can lie just off the ball.
+    const r = field.readout(size.height * 0.5, 0)
+    handlers.current.onReadout(r.left, r.right)
   })
 
-  const syncLattice = (e: ThreeEvent<PointerEvent>) => {
-    const p = e.point.clone()
-    // Point is in world space; tile is under the spinning group — use local via surface of slot centre as fallback.
-    const centre = surfaceToSphere(slot.u, slot.v, R)
-    // Prefer event local point if available
-    const local = e.object.worldToLocal(e.point.clone())
-    const n = local.lengthSq() > 0.01 ? local.normalize() : centre.normalize()
-    const lat = Math.asin(THREE.MathUtils.clamp(n.y, -1, 1))
-    const lon = Math.atan2(n.x, n.z)
-    onLatticeHover(lat, lon, true)
-    void p
-  }
-
-  const over = (e: ThreeEvent<PointerEvent>) => {
-    if (frozenRef.current) return
-    e.stopPropagation()
-    onHover(slot.clusterIndex, e.clientX, e.clientY)
-    syncLattice(e)
-  }
-  const move = (e: ThreeEvent<PointerEvent>) => {
-    if (frozenRef.current) return
-    e.stopPropagation()
-    onHover(slot.clusterIndex, e.clientX, e.clientY)
-    syncLattice(e)
-  }
-  const out = (e: ThreeEvent<PointerEvent>) => {
-    if (frozenRef.current) return
-    onHover(null, e.clientX, e.clientY)
-    onLatticeHover(0, 0, false)
-  }
-  const click = (e: ThreeEvent<MouseEvent>) => {
-    if (frozenRef.current) return
-    if (e.delta > 6 || spin.current.dragging) return
-    e.stopPropagation()
-    onSelect(slot.clusterIndex)
-  }
-
-  return (
-    <mesh
-      geometry={geometry}
-      material={material}
-      renderOrder={2}
-      onPointerOver={over}
-      onPointerMove={move}
-      onPointerOut={out}
-      onClick={click}
-    />
-  )
+  return <primitive object={field.object} />
 }

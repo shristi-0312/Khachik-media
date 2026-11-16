@@ -1,10 +1,9 @@
 .frame {
   position: relative;
-  width: 1414px;
-  height: 200px;
+  width: 100%;
+  height: clamp(140px, 18vw, 200px);
   background: rgba(0, 0, 0, 0.02);
   border: 1px solid rgba(0, 0, 0, 0.08);
-  /* Viewport clips the marquee; frame stays visible for corner brackets */
   overflow: visible;
 }
 
@@ -22,15 +21,15 @@
   gap: 42px;
   width: max-content;
   animation: marquee 28s linear infinite;
-  padding-left: 28px;
+  padding-left: var(--gutter);
 }
 
 .item {
   flex: none;
   font-family: var(--font-display);
   font-weight: 500;
-  font-size: 32px;
-  letter-spacing: -1.6px;
+  font-size: clamp(22px, 2.4vw, 32px);
+  letter-spacing: -0.05em;
   line-height: normal;
   text-transform: uppercase;
   color: var(--color-black);

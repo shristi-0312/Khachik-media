@@ -6,32 +6,32 @@ import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
 import styles from './StillsPage.module.css'
 
-/** Exact photo-cell positions from Figma Stills 143:4740 (leaf frames only). */
-const TILES: { left: number; top: number; width: number; height: number }[] = [
-  { left: 28, top: 350, width: 345, height: 460 },
-  { left: 741, top: 350, width: 701, height: 460 },
-  { left: 28, top: 910, width: 345, height: 460 },
-  { left: 385, top: 910, width: 344, height: 460 },
-  { left: 1098, top: 910, width: 344, height: 460 },
-  { left: 384, top: 1470, width: 345, height: 460 },
-  { left: 741, top: 1470, width: 345, height: 460 },
-  { left: 1098, top: 1470, width: 345, height: 460 },
-  { left: 730, top: 2030, width: 701, height: 460 },
-  { left: 1443, top: 2030, width: 345, height: 460 },
-  { left: 373, top: 2590, width: 344, height: 460 },
-  { left: 1086, top: 2590, width: 344, height: 460 },
-  { left: 1443, top: 2590, width: 345, height: 460 },
-  { left: 373, top: 3150, width: 345, height: 460 },
-  { left: 730, top: 3150, width: 345, height: 460 },
-  { left: 1087, top: 3150, width: 345, height: 460 },
-  { left: 28, top: 3710, width: 345, height: 460 },
-  { left: 741, top: 3710, width: 701, height: 460 },
-  { left: 28, top: 4270, width: 345, height: 460 },
-  { left: 385, top: 4270, width: 344, height: 460 },
-  { left: 1098, top: 4270, width: 344, height: 460 },
-  { left: 384, top: 4830, width: 345, height: 460 },
-  { left: 741, top: 4830, width: 345, height: 460 },
-  { left: 1098, top: 4830, width: 345, height: 460 },
+/** Tile spans in a 12-col masonry (desktop composition from Figma 143:4740). */
+const TILES: { span: 1 | 2; tall?: boolean }[] = [
+  { span: 1, tall: true },
+  { span: 2 },
+  { span: 1, tall: true },
+  { span: 1, tall: true },
+  { span: 1, tall: true },
+  { span: 1, tall: true },
+  { span: 1, tall: true },
+  { span: 1, tall: true },
+  { span: 2 },
+  { span: 1, tall: true },
+  { span: 1, tall: true },
+  { span: 1, tall: true },
+  { span: 1, tall: true },
+  { span: 1, tall: true },
+  { span: 1, tall: true },
+  { span: 1, tall: true },
+  { span: 1, tall: true },
+  { span: 2 },
+  { span: 1, tall: true },
+  { span: 1, tall: true },
+  { span: 1, tall: true },
+  { span: 1, tall: true },
+  { span: 1, tall: true },
+  { span: 1, tall: true },
 ]
 
 const INTRO =
@@ -74,14 +74,8 @@ export function StillsPage() {
             const src = urls.length ? urls[i % urls.length] : null
             return (
               <div
-                key={`${tile.left}-${tile.top}-${i}`}
-                className={styles.tile}
-                style={{
-                  left: tile.left,
-                  top: tile.top,
-                  width: tile.width,
-                  height: tile.height,
-                }}
+                key={i}
+                className={`${styles.tile} ${tile.span === 2 ? styles.wide : ''} ${tile.tall ? styles.tall : ''}`}
               >
                 {src ? (
                   <img
@@ -90,7 +84,6 @@ export function StillsPage() {
                     loading={i < 4 ? 'eager' : 'lazy'}
                     fetchPriority={i < 2 ? 'high' : i < 4 ? 'auto' : 'low'}
                     decoding="async"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 ) : null}
               </div>

@@ -1,14 +1,14 @@
 .page {
-  width: 1470px;
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
   background: var(--color-page);
 }
 
 .hero {
   position: relative;
   width: 100%;
-  /* One viewport tall after artboard scale — keeps scroll cue on-screen */
-  height: calc(100dvh / var(--artboard-scale, 1));
-  /* Neutral plate behind the video so true colors read after the red shutter exits */
+  height: var(--screen-h);
   background: #000;
   overflow: hidden;
 }
@@ -27,21 +27,19 @@
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  /* Sit above hero media / video so the handoff from the loader stays clean */
   z-index: 2;
 }
 
 .scrollCue {
   position: absolute;
   left: 50%;
-  /* Figma chevron bottom inset 57px (118:3005); gap label→chevron 18px */
-  bottom: calc(57px / var(--artboard-scale, 1));
+  bottom: clamp(28px, 6vh, 57px);
   transform: translateX(-50%);
   z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: calc(18px / var(--artboard-scale, 1));
+  gap: 18px;
 }
 
 .scrollLabel {
@@ -61,21 +59,24 @@
 }
 
 .marqueeSection {
-  padding: 28px 28px 0;
+  padding: 28px var(--gutter) 0;
 }
 
 .about {
   position: relative;
-  padding: 220px 224px 120px;
+  padding: clamp(80px, 14vw, 220px) clamp(var(--gutter), 12vw, 224px)
+    clamp(64px, 8vw, 120px);
   display: grid;
-  grid-template-columns: 380px 542px;
-  column-gap: 100px;
+  grid-template-columns: minmax(220px, 380px) minmax(280px, 542px);
+  column-gap: clamp(40px, 7vw, 100px);
+  row-gap: 40px;
   align-items: start;
   justify-content: start;
   background: var(--color-page);
 }
 
 .aboutLeft {
+  min-width: 0;
   padding-top: 0;
 }
 
@@ -92,39 +93,57 @@
   margin: 0;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 40px;
-  line-height: 36px;
-  letter-spacing: -2px;
+  font-size: clamp(28px, 3.2vw, 40px);
+  line-height: 0.95;
+  letter-spacing: -0.05em;
   text-transform: uppercase;
   text-align: left;
   color: var(--color-fg);
-  width: 380px;
 }
 
-/* Figma body @ y=1430 vs label @ 1348 → +82px column offset */
+.headline span {
+  display: block;
+  text-box-trim: none;
+}
+
 .aboutRight {
   display: flex;
   flex-direction: column;
-  padding-top: 82px;
+  padding-top: clamp(0px, 4vw, 82px);
+  min-width: 0;
 }
 
 .aboutRight p {
   margin: 0;
+  max-width: 542px;
   font-family: var(--font-mono);
-  font-size: 16px;
-  letter-spacing: -0.8px;
+  font-size: clamp(14px, 1.2vw, 16px);
+  letter-spacing: -0.05em;
+  line-height: 1.2;
   text-transform: uppercase;
-  text-align: justify;
   color: var(--color-fg);
-  line-height: normal;
+  text-box-trim: none;
+}
+
+.aboutRight p span {
+  display: block;
+  white-space: nowrap;
+  text-box-trim: none;
+  text-align: justify;
+  text-align-last: justify;
+}
+
+.aboutRight p span:last-child {
+  text-align: left;
+  text-align-last: auto;
 }
 
 .aboutRight p + p {
-  margin-top: 16px;
+  margin-top: 18.5px;
 }
 
 .more {
-  margin-top: 59px;
+  margin-top: clamp(28px, 4vw, 59px);
   display: inline-flex;
   align-items: flex-start;
   gap: 8px;
@@ -152,10 +171,10 @@
 .viewAll {
   position: absolute;
   left: 50%;
-  bottom: calc(48px / var(--artboard-scale, 1));
+  bottom: clamp(24px, 5vh, 48px);
   z-index: 3;
   transform: translateX(-50%);
-  width: 150px;
+  width: min(150px, calc(100% - 2 * var(--gutter)));
   height: 32px;
   background: var(--color-red);
   display: flex;
@@ -170,5 +189,39 @@
 }
 
 .contactSection {
-  padding: 100px 28px 50px;
+  padding: clamp(48px, 7vw, 100px) var(--gutter) 50px;
+}
+
+@media (max-width: 1199px) {
+  .aboutRight p span {
+    display: inline;
+    white-space: normal;
+    text-align: left;
+    text-align-last: auto;
+  }
+
+  .aboutRight p span::after {
+    content: ' ';
+  }
+}
+
+@media (max-width: 1023px) {
+  .about {
+    grid-template-columns: 1fr;
+    justify-content: stretch;
+  }
+
+  .aboutRight {
+    padding-top: 0;
+  }
+
+  .aboutRight p {
+    max-width: none;
+  }
+}
+
+@media (max-width: 719px) {
+  .headline span {
+    white-space: normal;
+  }
 }

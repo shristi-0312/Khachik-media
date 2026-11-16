@@ -1,11 +1,8 @@
 :root {
   /* Brand (shared) */
   --color-red: #cd001a;
-  --color-red-deep: #cd001a;
-  --color-ink: #151313;
   --color-white: #ffffff;
   --color-black: #000000;
-  --color-muted-white: rgba(255, 255, 255, 0.4);
   --color-glass: rgba(0, 0, 0, 0.2);
 
   /* Semantic — light (default / white version) */
@@ -21,12 +18,29 @@
   --color-play-bg: rgba(0, 0, 0, 0.08);
   --color-shell: #111111;
 
-  --artboard: 1470px;
-  --gutter: 28px;
+  /*
+   * Layout tokens. Breakpoints used across the site (plain CSS cannot share
+   * them as custom-property media queries):
+   *   ≤ 1023  phone + tablet (hamburger)   ≤ 1199  small laptop
+   *   ≥ 1200  desktop nav                  content caps at --content-max
+   */
+  --gutter: clamp(16px, 1.9vw, 28px);
   --header-h: 50px;
+  /** Widest a page grows; heroes/Labs stay edge-to-edge inside that shell. */
+  --content-max: 1864px;
+  /** A block that sits inside the gutters, centred once the page outgrows it. */
+  --content-w: min(100% - 2 * var(--gutter), var(--content-max));
+  /** One screen tall, steady while a phone's browser bars slide in and out. */
+  --screen-h: 100vh;
 
   --font-display: 'Larsseit', sans-serif;
   --font-mono: 'Paper Mono', monospace;
+}
+
+@supports (height: 100svh) {
+  :root {
+    --screen-h: 100svh;
+  }
 }
 
 /* Dark version — exact Figma tokens from frames 6:519 / 6:1933 / 6:2220 / 6:2317 */

@@ -40,11 +40,41 @@ export const CATEGORIES: { id: Category; label: string }[] = [
   { id: 'advertisements', label: 'Advertisements' },
 ]
 
-export const ABOUT_BODY = [
-  'Khachik Media is a production house for corporate events, artist events and short-form content. We help brands turn moments into stories their audience remembers and shares.',
-  'Our edge is how we work on the ground. We know how to put people at ease, from CEOs and performers to the crowd and the people around them. The result is footage that feels natural, warm and real, not staged. And because we’ve built our own audience online, every edit is shaped to hold attention from the first second.',
-  'Brands like Bluorng, Puma, New Balance, Pepsi Sri Lanka, Swiggy and Snitch, along with artists like Samay Raina, have trusted us to capture their biggest moments.',
-  'Whether it’s a launch, a live show or a content series, we bring the same promise: stories with heart, built to perform.',
+/** Figma 118:3009 — three lines inside the 380px lockup. */
+export const ABOUT_HEADLINE = [
+  'We are all about',
+  'humane content &',
+  'holding attention',
+]
+
+/**
+ * Figma 118:3007 — Paper Mono 16 / -5% / justified, 542px.
+ * Each paragraph is the designed line breaks. The last line stays flush left.
+ */
+export const ABOUT_BODY: string[][] = [
+  [
+    'Khachik Media is a production house for corporate events,',
+    'artist events and short-form content. We help brands turn',
+    'moments into stories their audience remembers and shares.',
+  ],
+  [
+    'Our edge is how we work on the ground. We know how to put',
+    'people at ease, from CEOs and performers to the crowd and',
+    'the people around them. The result is footage that feels',
+    'natural, warm and real, not staged. And because we’ve built',
+    'our own audience online, every edit is shaped to hold',
+    'attention from the first second.',
+  ],
+  [
+    'Brands like Bluorng, Puma, New Balance, Pepsi Sri Lanka,',
+    'Swiggy and Snitch, along with artists like Samay Raina, have',
+    'trusted us to capture their biggest moments.',
+  ],
+  [
+    'Whether it’s a launch, a live show or a content series, we',
+    'bring the same promise: stories with heart, built to',
+    'perform.',
+  ],
 ]
 
 export const PROJECTS: Project[] = [
@@ -60,6 +90,8 @@ export const PROJECTS: Project[] = [
       "We had the exciting opportunity to shoot, edit, and produce the PLAYBOY X BLUORNG campaign, merging PLAYBOY's iconic style with BLUORNG’s bold, contemporary edge. From the high-energy shoot to the final polished edit, every step was meticulously crafted to create a visually striking, seamless fusion of both brands’ unique vibes.",
       'We handled photography, videography, and complete end-to-end campaign production, bringing the vision to life across every frame. The result is a campaign that perfectly captures the essence of both worlds, bold and unforgettable.',
     ],
+    coverUrl: '/media/hq/h1.mp4',
+    coverType: 'video',
   },
   {
     slug: 'ultrahuman-abu-dhabi',
@@ -73,6 +105,8 @@ export const PROJECTS: Project[] = [
       'We captured Ultrahuman’s Abu Dhabi moment end to end — from on-ground coverage to polished edits built to hold attention from the first second.',
       'The result is footage that feels natural, warm and real, shaped for brands and audiences who expect stories with heart.',
     ],
+    coverUrl: '/media/hq/h2.mp4',
+    coverType: 'video',
   },
   {
     slug: 'pepsi-sri-lanka',
@@ -158,34 +192,3 @@ export const TESTIMONIALS = [
     role: 'Founder, Big 6',
   },
 ]
-
-export function getProject(slug: string) {
-  return PROJECTS.find((p) => p.slug === slug)
-}
-
-export function getNextProject(slug: string) {
-  const i = PROJECTS.findIndex((p) => p.slug === slug)
-  if (i < 0) return PROJECTS[0]
-  return PROJECTS[(i + 1) % PROJECTS.length]
-}
-
-/** Compact looping reels painted onto the home globe tiles. */
-export const MEDIA_REELS = [
-  '/media/small/reel-1.mp4',
-  '/media/small/reel-2.mp4',
-  '/media/small/reel-3.mp4',
-  '/media/small/reel-4.mp4',
-  '/media/small/reel-5.mp4',
-  '/media/small/reel-6.mp4',
-  '/media/small/reel-7.mp4',
-  '/media/small/reel-8.mp4',
-  '/media/small/reel-9.mp4',
-  '/media/small/reel-10.mp4',
-  '/media/small/reel-11.mp4',
-  '/media/small/reel-12.mp4',
-  '/media/small/reel-13.mp4',
-  '/media/small/reel-14.mp4',
-] as const
-
-/** Higher-quality reel kept only for the Swiggy project detail page. */
-export const DETAIL_REEL = '/media/reel-1.mp4'

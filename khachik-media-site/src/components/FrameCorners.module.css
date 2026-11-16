@@ -51,6 +51,8 @@
 /* Mid-edge ticks (footer logo divider) — Figma Edge Top / Edge Bottom */
 .edge {
   position: absolute;
+  left: var(--frame-edge-x, 400px);
+  display: var(--frame-edge-display, block);
   width: 15px;
   height: 8px;
   box-sizing: border-box;

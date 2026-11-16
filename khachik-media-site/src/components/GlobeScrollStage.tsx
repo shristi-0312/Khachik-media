@@ -2,8 +2,8 @@ import type { ReactNode } from 'react'
 import styles from './GlobeScrollStage.module.css'
 
 /**
- * One-viewport Griflan-style globe stage.
- * Rounding is from the 3D sphere horizon — not CSS border-radius.
+ * One-viewport stage for the Labs field (see globe/config.ts).
+ * It only reserves the height; the page scrolls past it as usual.
  */
 export function GlobeScrollStage({ children }: { children: ReactNode }) {
   return (

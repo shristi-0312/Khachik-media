@@ -1,18 +1,14 @@
-/* Figma About Us 118:3442 — 1470×4718 */
 .page {
-  position: relative;
-  width: 1470px;
-  height: 4718px;
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
   background: var(--color-page);
 }
 
-/* Hero 118:3443 — fixed 900 (not 100dvh) so absolute bands stay on Figma Y */
 .hero {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 1470px;
-  height: 900px;
+  position: relative;
+  width: 100%;
+  height: clamp(560px, 85vh, 900px);
   background: var(--color-red);
   overflow: hidden;
 }
@@ -20,7 +16,7 @@
 .wordmark {
   position: absolute;
   left: 50%;
-  top: 450px;
+  top: 50%;
   transform: translate(-50%, -50%);
   z-index: 2;
 }
@@ -28,14 +24,14 @@
 .heroCopy {
   position: absolute;
   left: 50%;
-  top: 765px;
+  bottom: clamp(40px, 8vh, 96px);
   transform: translateX(-50%);
   z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 40px;
-  width: 297px;
+  gap: 24px;
+  width: min(297px, calc(100% - 2 * var(--gutter)));
 }
 
 .kicker {
@@ -51,7 +47,6 @@
 
 .tagline {
   margin: 0;
-  width: 297px;
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: -0.7px;
@@ -60,102 +55,87 @@
   text-transform: uppercase;
 }
 
+.copyBand {
+  display: grid;
+  grid-template-columns: minmax(220px, 380px) minmax(280px, 542px);
+  column-gap: clamp(40px, 7vw, 100px);
+  row-gap: 32px;
+  padding: clamp(64px, 10vw, 168px) clamp(var(--gutter), 12vw, 224px) 0;
+  align-items: start;
+}
+
+.copyLeft {
+  min-width: 0;
+}
+
 .label {
-  position: absolute;
-  left: 224px;
-  margin: 0;
-  width: 272px;
+  margin: 0 0 22px;
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: -0.7px;
   text-transform: uppercase;
-  text-align: justify;
   color: var(--color-fg);
 }
 
-.labelAbout {
-  top: 1068px;
-}
-
-.labelLove {
-  top: 3026px;
-}
-
-/*
- * Figma Larsseit Bold 40 / 36, width 380 — left-aligned, words tight.
- * Soft-wrap differs in browsers — hard line breaks match the design render:
- * WE ARE ALL ABOUT / HUMANE CONTENT & / HOLDING ATTENTION
- */
 .headline {
-  position: absolute;
-  left: 224px;
   margin: 0;
-  width: 380px;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 40px;
-  line-height: 36px;
-  letter-spacing: -2px;
+  font-size: clamp(28px, 3.2vw, 40px);
+  line-height: 0.95;
+  letter-spacing: -0.05em;
   text-transform: uppercase;
   text-align: left;
   color: var(--color-fg);
 }
 
-.headlineAbout {
-  top: 1100px;
-}
-
-.headlineLove {
-  top: 3058px;
+.headline span {
+  display: block;
+  text-box-trim: none;
 }
 
 .body {
-  position: absolute;
-  left: 704px;
-  width: 542px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-.bodyAbout {
-  top: 1150px;
-}
-
-.bodyLove {
-  top: 3108px;
+  gap: 18.5px;
+  min-width: 0;
+  padding-top: clamp(0px, 3vw, 50px);
 }
 
 .body p {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 16px;
-  letter-spacing: -0.8px;
+  font-size: clamp(14px, 1.2vw, 16px);
+  letter-spacing: -0.05em;
+  line-height: 1.2;
   text-transform: uppercase;
-  text-align: justify;
   color: var(--color-fg);
-  line-height: normal;
+  text-box-trim: none;
+}
+
+.body p span {
+  display: block;
+  white-space: nowrap;
+  text-box-trim: none;
+  text-align: justify;
+  text-align-last: justify;
+}
+
+.body p span:last-child {
+  text-align: left;
+  text-align-last: auto;
 }
 
 .mediaGrid {
-  position: absolute;
-  left: 28px;
-  top: 1652px;
-  width: 1414px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.row {
-  display: flex;
+  margin: clamp(48px, 8vw, 120px) var(--gutter) 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
 .mediaRed {
   position: relative;
-  width: 701px;
-  height: 394px;
+  aspect-ratio: 701 / 394;
   background: var(--color-red);
   overflow: hidden;
 }
@@ -177,22 +157,19 @@
 }
 
 .divider {
-  position: absolute;
-  left: 28px;
-  top: 3642px;
-  width: 1414px;
+  width: calc(100% - 2 * var(--gutter));
   height: 1px;
+  margin: clamp(48px, 8vw, 100px) auto 0;
   background: var(--color-divider);
 }
 
 .ourWorkHead {
-  position: absolute;
-  left: 28px;
-  top: 3692px;
-  width: 1414px;
+  width: calc(100% - 2 * var(--gutter));
+  margin: 50px auto 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: -0.7px;
@@ -207,30 +184,57 @@
 }
 
 .workGrid {
-  position: absolute;
-  left: 28px;
-  top: 3718px;
-  width: 1414px;
+  width: calc(100% - 2 * var(--gutter));
+  margin: 26px auto 0;
   display: grid;
-  grid-template-columns: 701px 701px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
 .contactSection {
-  position: absolute;
-  left: 28px;
-  top: 4370px;
-  width: 1414px;
+  width: calc(100% - 2 * var(--gutter));
+  margin: clamp(64px, 8vw, 120px) auto 0;
 }
 
 .footerWrap {
-  position: absolute;
-  left: 0;
-  top: 4490px;
-  width: 1470px;
+  margin-top: 50px;
 }
 
-.footerWrap :global([class*='shell']) {
-  width: 1470px;
-  padding: 0 28px 28px;
+@media (max-width: 1199px) {
+  .body p span {
+    display: inline;
+    white-space: normal;
+    text-align: left;
+    text-align-last: auto;
+  }
+
+  .body p span::after {
+    content: ' ';
+  }
+}
+
+@media (max-width: 1023px) {
+  .copyBand {
+    grid-template-columns: 1fr;
+  }
+
+  .body {
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 719px) {
+  .mediaGrid,
+  .workGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .play {
+    width: 64px;
+    height: 64px;
+  }
+
+  .headline span {
+    white-space: normal;
+  }
 }
