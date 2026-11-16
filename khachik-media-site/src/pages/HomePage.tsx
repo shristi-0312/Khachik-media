@@ -1,13 +1,15 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Artboard } from '../components/Artboard'
 import { ContactStrip } from '../components/ContactStrip'
 import { Footer } from '../components/Footer'
+import { GlobeScrollStage } from '../components/GlobeScrollStage'
 import { Header } from '../components/Header'
 import { LogoMarquee } from '../components/LogoMarquee'
 import { Wordmark } from '../components/Wordmark'
 import { ABOUT_BODY } from '../data/content'
 import { useBasePath } from '../hooks/useBasePath'
+import { HERO_CDN_URL, HERO_FALLBACK_URL } from '../media/cdn'
 import styles from './HomePage.module.css'
 
 const HomeGlobe = lazy(() =>
@@ -16,6 +18,27 @@ const HomeGlobe = lazy(() =>
 
 export function HomePage() {
   const base = useBasePath()
+  const heroRef = useRef<HTMLVideoElement>(null)
+  const globeScrollRef = useRef(0)
+  const onGlobeProgress = useCallback((t: number) => {
+    globeScrollRef.current = t
+  }, [])
+
+  // After the loader warms the CDN cache, ensure the visible hero starts cleanly.
+  useEffect(() => {
+    const video = heroRef.current
+    if (!video) return
+    const tryPlay = () => {
+      void video.play().catch(() => {})
+    }
+    tryPlay()
+    video.addEventListener('canplay', tryPlay)
+    video.addEventListener('loadeddata', tryPlay)
+    return () => {
+      video.removeEventListener('canplay', tryPlay)
+      video.removeEventListener('loadeddata', tryPlay)
+    }
+  }, [])
 
   return (
     <Artboard>
@@ -23,7 +46,9 @@ export function HomePage() {
         <Header />
         <section className={styles.hero}>
           <video
+            ref={heroRef}
             className={styles.heroVideo}
+            data-boot-video="hero"
             autoPlay
             muted
             loop
@@ -31,11 +56,8 @@ export function HomePage() {
             preload="auto"
             aria-hidden="true"
           >
-            <source
-              src="https://d1rkq96nxpa3sq.cloudfront.net/media/hero/hero.mp4"
-              type="video/mp4"
-            />
-            <source src="/media/hero.mp4" type="video/mp4" />
+            <source src={HERO_CDN_URL} type="video/mp4" />
+            <source src={HERO_FALLBACK_URL} type="video/mp4" />
           </video>
           <Wordmark className={styles.wordmark} />
           <div className={styles.scrollCue}>
@@ -76,14 +98,16 @@ export function HomePage() {
           </div>
         </section>
 
-        <section className={styles.globeSlot} aria-label="Projects globe">
-          <Suspense fallback={<div className={styles.globeFallback} aria-hidden="true" />}>
-            <HomeGlobe />
-          </Suspense>
-          <Link to={`${base}/films`} className={styles.viewAll}>
-            View all
-          </Link>
-        </section>
+        <GlobeScrollStage onProgress={onGlobeProgress}>
+          <div className={styles.globeSlot}>
+            <Suspense fallback={<div className={styles.globeFallback} aria-hidden="true" />}>
+              <HomeGlobe scrollProgressRef={globeScrollRef} />
+            </Suspense>
+            <Link to={`${base}/films`} className={styles.viewAll}>
+              View all
+            </Link>
+          </div>
+        </GlobeScrollStage>
 
         <section className={styles.contactSection}>
           <ContactStrip />

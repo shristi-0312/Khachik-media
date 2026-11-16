@@ -1,26 +1,89 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MutableRefObject,
+} from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Canvas } from '@react-three/fiber'
 import * as THREE from 'three'
-import { apiConfigured, fetchMedia } from '../api/client'
+import { apiConfigured, fetchMedia, type ApiMediaItem } from '../api/client'
 import { GLOBE, R } from '../globe/config'
 import { GlobeScene, type Readout } from '../globe/GlobeScene'
 import { buildLayout } from '../globe/layout'
-import { buildGlobeProjects, PROJECTS, type Project as GlobeProject } from '../globe/projects'
+import {
+  buildGlobeProjects,
+  PROJECTS,
+  type GlobeMediaItem,
+  type Project as GlobeProject,
+} from '../globe/projects'
 import { buildVideoPool, type VideoPool } from '../globe/videoPool'
 import { useBasePath } from '../hooks/useBasePath'
 import styles from './HomeGlobe.module.css'
 
-/** Interactive globe only — no Studio Labs chrome. */
-export function HomeGlobe() {
+function toGlobeMedia(items: ApiMediaItem[]): GlobeMediaItem[] {
+  return items
+    .filter((i) => i.published !== false && i.url)
+    .map((i) => ({
+      url: i.url,
+      mediaType: i.mediaType,
+      title: i.title,
+      section: i.section,
+    }))
+}
+
+const ZERO_SCROLL = { current: 0 } as MutableRefObject<number>
+
+/** Interactive globe — mixed S3 films/stills, hairline lattice, free drag. */
+export function HomeGlobe({
+  scrollProgressRef = ZERO_SCROLL,
+}: {
+  scrollProgressRef?: MutableRefObject<number>
+}) {
   const host = useRef<HTMLDivElement>(null)
+  const vignette = useRef<HTMLDivElement>(null)
   const [ready, setReady] = useState(false)
+  /** Wait until near the viewport so hero CDN boot is not starved by dozens of HQ clips. */
+  const [nearView, setNearView] = useState(false)
   const [videos, setVideos] = useState<VideoPool | null>(null)
   const [globeProjects, setGlobeProjects] = useState<GlobeProject[]>(PROJECTS)
   const navigate = useNavigate()
   const base = useBasePath()
 
+  // Keep CSS soft-red intensity in sync without React re-renders.
+  useEffect(() => {
+    let raf = 0
+    const tick = () => {
+      raf = requestAnimationFrame(tick)
+      const el = vignette.current
+      if (!el) return
+      el.style.setProperty('--globe-scroll', String(scrollProgressRef.current))
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [scrollProgressRef])
+
+  useEffect(() => {
+    const el = host.current
+    if (!el) return
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setNearView(true)
+          io.disconnect()
+        }
+      },
+      { rootMargin: '280px 0px' },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+
   useLayoutEffect(() => {
+    if (!nearView) return
     const el = host.current
     if (!el) return
 
@@ -41,24 +104,18 @@ export function HomeGlobe() {
       window.clearTimeout(t)
       window.clearTimeout(t2)
     }
-  }, [])
+  }, [nearView])
 
-  // Load CloudFront HQ clips when the API is configured; else keep local stock.
+  // Pull every library section (films + stills + globe clips) and mix onto the sphere.
   useEffect(() => {
-    if (!apiConfigured()) return
+    if (!nearView || !apiConfigured()) return
     let cancelled = false
     void (async () => {
       try {
-        const [hItems, vItems] = await Promise.all([
-          fetchMedia('globe_horizontal'),
-          fetchMedia('globe_vertical'),
-        ])
+        const all = await fetchMedia()
         if (cancelled) return
-        const h = hItems.map((i) => i.url)
-        const v = vItems.map((i) => i.url)
-        if (h.length || v.length) {
-          setGlobeProjects(buildGlobeProjects(h.length ? h : undefined, v.length ? v : undefined))
-        }
+        const library = toGlobeMedia(all)
+        if (library.length) setGlobeProjects(buildGlobeProjects(library))
       } catch {
         /* keep local fallbacks */
       }
@@ -66,20 +123,22 @@ export function HomeGlobe() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [nearView])
 
-  // Native VideoTextures so uploaded HQ stays sharp on large frames.
+  // Native VideoTextures / still textures so HQ stays sharp on large frames.
   useEffect(() => {
+    if (!nearView) return
     const next = buildVideoPool()
     setVideos(next)
     return () => {
       next.dispose()
       setVideos(null)
     }
-  }, [globeProjects])
+  }, [nearView, globeProjects])
 
   const layout = useMemo(() => buildLayout(globeProjects.length), [globeProjects.length])
   const [hovered, setHovered] = useState<number | null>(null)
+  const [dragging, setDragging] = useState(false)
 
   const tooltip = useRef<HTMLDivElement>(null)
   const leftReadout = useRef<HTMLSpanElement>(null)
@@ -120,7 +179,11 @@ export function HomeGlobe() {
     <div
       ref={host}
       className={styles.stage}
-      style={{ cursor: hovered !== null ? 'pointer' : 'grab' }}
+      style={{ cursor: dragging ? 'grabbing' : hovered !== null ? 'pointer' : 'grab' }}
+      onPointerDown={() => setDragging(true)}
+      onPointerUp={() => setDragging(false)}
+      onPointerLeave={() => setDragging(false)}
+      onPointerCancel={() => setDragging(false)}
     >
       {ready && videos ? (
         <Canvas
@@ -143,11 +206,12 @@ export function HomeGlobe() {
             onSelect={onSelect}
             onReadout={onReadout}
             allowPageScroll
+            scrollProgressRef={scrollProgressRef}
           />
         </Canvas>
       ) : null}
 
-      <div className={styles.vignette} aria-hidden="true" />
+      <div ref={vignette} className={styles.vignette} aria-hidden="true" />
       <span ref={leftReadout} className={`${styles.readout} ${styles.readoutLeft}`}>
         0.000000
       </span>
@@ -155,6 +219,9 @@ export function HomeGlobe() {
         0.000000
       </span>
       <div ref={tooltip} className={styles.tooltip} aria-hidden="true" />
+      <p className={styles.hint} aria-hidden="true">
+        Drag to explore
+      </p>
     </div>
   )
 }

@@ -38,18 +38,23 @@ function mediaKey(section: MediaSectionId, contentType: string, filename?: strin
   return `media/${section}/${randomUUID()}.${ext}`
 }
 
+/** UUID keys are immutable — long browser/CDN cache for full-quality originals. */
+const MEDIA_CACHE_CONTROL = 'public, max-age=31536000, immutable'
+
 /** Original-bytes upload — no transcode; Content-Type preserved for HQ delivery. */
 async function signPut(key: string, contentType: string) {
   const command = new PutObjectCommand({
     Bucket: config.s3Bucket,
     Key: key,
     ContentType: contentType,
+    CacheControl: MEDIA_CACHE_CONTROL,
   })
   const uploadUrl = await getSignedUrl(client, command, { expiresIn: 60 * 15 })
   return {
     key,
     uploadUrl,
     publicUrl: `${publicBase()}/${key}`,
+    cacheControl: MEDIA_CACHE_CONTROL,
   }
 }
 
@@ -58,7 +63,7 @@ export async function createPresignedUpload(input: {
   slug: string
   contentType: string
   filename?: string
-}): Promise<{ key: string; uploadUrl: string; publicUrl: string }> {
+}): Promise<{ key: string; uploadUrl: string; publicUrl: string; cacheControl: string }> {
   const ext = extensionFor(input.contentType, input.filename)
   return signPut(`projects/${input.slug}/${randomUUID()}.${ext}`, input.contentType)
 }
@@ -67,7 +72,7 @@ export async function createMediaPresignedUpload(input: {
   section: MediaSectionId
   contentType: string
   filename?: string
-}): Promise<{ key: string; uploadUrl: string; publicUrl: string }> {
+}): Promise<{ key: string; uploadUrl: string; publicUrl: string; cacheControl: string }> {
   return signPut(mediaKey(input.section, input.contentType, input.filename), input.contentType)
 }
 
@@ -85,6 +90,7 @@ export async function putMediaObject(input: {
       Key: key,
       Body: input.body,
       ContentType: input.contentType,
+      CacheControl: MEDIA_CACHE_CONTROL,
     }),
   )
   return { key, publicUrl: `${publicBase()}/${key}` }

@@ -34,7 +34,15 @@ function MediaFill({
   if (mediaType === 'video' || /\.(mp4|webm|mov)(\?|$)/i.test(url)) {
     return <LoopingVideo src={url} className={className ?? styles.fillVideo} />
   }
-  return <img src={url} alt="" className={className ?? styles.fillVideo} />
+  return (
+    <img
+      src={url}
+      alt=""
+      className={className ?? styles.fillVideo}
+      loading="lazy"
+      decoding="async"
+    />
+  )
 }
 
 function galleryBySlot(gallery: GalleryItem[] | undefined, slot: string) {

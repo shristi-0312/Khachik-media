@@ -1,0 +1,13 @@
+.track {
+  position: relative;
+  width: 100%;
+  /* Exactly one artboard-scaled viewport — no extra scroll inside this section */
+  height: calc(100dvh / var(--artboard-scale, 1));
+  background: #141312;
+  overflow: hidden;
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+}

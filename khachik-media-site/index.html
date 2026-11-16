@@ -9,6 +9,13 @@
     <link rel="preload" href="/fonts/Satoshi-700.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/Satoshi-900.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/IBMPlexMono-400.woff2" as="font" type="font/woff2" crossorigin />
+    <!-- Start full-quality hero download before JS so the splash can finish against warm CDN bytes. -->
+    <link
+      rel="preload"
+      as="video"
+      href="https://d1rkq96nxpa3sq.cloudfront.net/media/hero/hero.mp4"
+      type="video/mp4"
+    />
   </head>
   <body>
     <div id="root"></div>

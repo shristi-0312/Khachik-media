@@ -25,44 +25,48 @@ export const GLOBE = {
   staggerOddRows: true,
 
   // On screen, the sphere is scaled so its radius = min(radiusVw × width, radiusVh × height).
-  radiusVw: 0.55,
-  radiusVh: 0.95,
+  // Slightly larger than before so the surface reads closer / more Griflan-like.
+  radiusVw: 0.62,
+  radiusVh: 1.05,
   scaleMin: 0.7,
-  scaleMax: 2.5,
+  scaleMax: 2.8,
 
   // Lattice follows unit cells so video edges sit on the grid.
   latticeLatLimitDeg: 86,
-  /** Relative fatness for cream grid (angular multi-stroke; WebGL ignores lineWidth). */
-  latticeLineWidth: 2.4,
+  /**
+   * Hairline lattice (labs.griflan.com). WebGL often ignores lineWidth, so
+   * geometry.ts uses a single stroke — keep this ≤ 1 for a thin read.
+   */
+  latticeLineWidth: 0.9,
   /** Unused by the lattice-scan glow; kept for geometry helpers. */
-  hoverLineWidth: 2.8,
+  hoverLineWidth: 1.2,
 
-  panDefault: 0.4,
-  panMin: 0.1,
-  panMax: 0.6,
+  /** Camera height as a fraction of R — higher = more horizon / bird’s-eye. */
+  panDefault: 0.48,
+  panMin: 0.12,
+  panMax: 0.72,
 
-  driftRadPerSec: 0.03,
-  idleDelayMs: 900,
+  driftRadPerSec: 0.028,
+  idleDelayMs: 1100,
   wheelSens: 0.0014,
-  dragSens: 0.0021,
-  panDragSens: 1.0,
-  damping: 6,
+  dragSens: 0.0024,
+  panDragSens: 1.15,
+  damping: 7,
 
-  bg: '#181616',
+  bg: '#141312',
   cream: '#fffddb',
   /** Soft neon-red like labs.griflan.com hover (not flat brand fill). */
   red: '#e0122e',
   lattice: '#fffddb',
-  latticeAlpha: 0.38,
+  latticeAlpha: 0.28,
   /** Peak opacity of cursor-lit lattice lines. */
-  hoverLatticeAlpha: 0.95,
+  hoverLatticeAlpha: 1,
   /**
-   * Glow radius in unit-cells (Griflan ~2–4). Converted to radians via tileW/R.
-   * Small = sharp “scan” of nearby meridians/parallels only.
+   * Soft red scan radius in unit-cells (Griflan ~2–4). Wider = softer gradient.
    */
-  hoverRadiusCells: 2.6,
+  hoverRadiusCells: 4.2,
   /** Lerp rate for cursor follow on the lattice (higher = snappier). */
-  hoverFollow: 14,
+  hoverFollow: 11,
 } as const
 
 /** Pitch between cluster centres (3-cell frame + pad). */

@@ -87,7 +87,8 @@ export function StillsPage() {
                   <img
                     src={src}
                     alt=""
-                    loading="lazy"
+                    loading={i < 4 ? 'eager' : 'lazy'}
+                    fetchPriority={i < 2 ? 'high' : i < 4 ? 'auto' : 'low'}
                     decoding="async"
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />

@@ -21,6 +21,13 @@ export interface Project {
   orientation: 'horizontal' | 'vertical'
 }
 
+export type GlobeMediaItem = {
+  url: string
+  mediaType: 'image' | 'video'
+  title?: string
+  section?: string
+}
+
 function hsl(h: number, s: number, l: number) {
   return `hsl(${((h % 360) + 360) % 360} ${s}% ${l}%)`
 }
@@ -59,6 +66,9 @@ const GLOBE_REELS_V = [
   '/media/hq/h3.mp4',
 ] as const
 
+/** Local still fallbacks mixed onto the sphere with reels. */
+const GLOBE_STILLS = Array.from({ length: 24 }, (_, i) => `/media/stills/still-${i + 1}.jpg`)
+
 const CATEGORY_LABEL: Record<Category, string> = {
   promotional: 'Promotional',
   advertisements: 'Ads',
@@ -68,37 +78,118 @@ const CATEGORY_LABEL: Record<Category, string> = {
 /** Matches the sphere grid (gridCols × gridRows). */
 const GLOBE_COUNT = 50
 
+function preferVertical(item: GlobeMediaItem) {
+  if (item.section === 'films_short_forms' || item.section === 'globe_vertical') return true
+  if (item.section === 'films_promotional' || item.section === 'films_advertisements') return false
+  if (item.section === 'globe_horizontal') return false
+  // Stills + unknowns: alternate by hashing the URL.
+  let h = 0
+  for (let i = 0; i < item.url.length; i++) h = (h * 31 + item.url.charCodeAt(i)) | 0
+  return (h & 1) === 1
+}
+
+function splitByOrientation(items: GlobeMediaItem[]) {
+  const horizontal: GlobeMediaItem[] = []
+  const vertical: GlobeMediaItem[] = []
+  for (const item of items) {
+    if (preferVertical(item)) vertical.push(item)
+    else horizontal.push(item)
+  }
+  return { horizontal, vertical }
+}
+
+function localFallbackItems(): GlobeMediaItem[] {
+  const videosH = GLOBE_REELS_H.map((url) => ({
+    url,
+    mediaType: 'video' as const,
+    section: 'globe_horizontal',
+  }))
+  const videosV = GLOBE_REELS_V.map((url) => ({
+    url,
+    mediaType: 'video' as const,
+    section: 'globe_vertical',
+  }))
+  const stills = GLOBE_STILLS.map((url, i) => ({
+    url,
+    mediaType: 'image' as const,
+    section: 'stills',
+    title: `Still ${i + 1}`,
+  }))
+  // Interleave so the sphere reads as a mixed reel + still collage.
+  const out: GlobeMediaItem[] = []
+  const max = Math.max(videosH.length + videosV.length, stills.length)
+  let vi = 0
+  const vids = [...videosH, ...videosV]
+  for (let i = 0; i < max; i++) {
+    if (i % 3 !== 2 && vi < vids.length) out.push(vids[vi++]!)
+    if (stills[i]) out.push(stills[i]!)
+  }
+  while (vi < vids.length) out.push(vids[vi++]!)
+  return out
+}
+
+/**
+ * Build sphere projects from a mixed library (films + stills + globe clips).
+ * Falls back to local HQ reels + stills when the library is empty.
+ */
 export function buildGlobeProjects(
-  horizontalUrls: string[] = [...GLOBE_REELS_H],
-  verticalUrls: string[] = [...GLOBE_REELS_V],
+  library: GlobeMediaItem[] = [],
+  horizontalUrls?: string[],
+  verticalUrls?: string[],
 ): Project[] {
-  const h = horizontalUrls.length ? horizontalUrls : [...GLOBE_REELS_H]
-  const v = verticalUrls.length ? verticalUrls : [...GLOBE_REELS_V]
+  let items = library.filter((m) => Boolean(m.url))
+
+  // Legacy path: separate H/V URL lists from older callers.
+  if (!items.length && (horizontalUrls?.length || verticalUrls?.length)) {
+    items = [
+      ...(horizontalUrls ?? []).map((url) => ({
+        url,
+        mediaType: 'video' as const,
+        section: 'globe_horizontal',
+      })),
+      ...(verticalUrls ?? []).map((url) => ({
+        url,
+        mediaType: 'video' as const,
+        section: 'globe_vertical',
+      })),
+    ]
+  }
+
+  if (!items.length) items = localFallbackItems()
+
+  const { horizontal, vertical } = splitByOrientation(items)
+  const hPool = horizontal.length ? horizontal : items
+  const vPool = vertical.length ? vertical : items
 
   return Array.from({ length: GLOBE_COUNT }, (_, i) => {
     const site = SITE_PROJECTS[i % SITE_PROJECTS.length]!
     const tiles = boardTiles(i)
     const orientation = orientationForCluster(i)
+    const pool = orientation === 'vertical' ? vPool : hPool
+    const media = pool[Math.floor(i / 2) % pool.length]!
 
     const videos: Partial<Record<number, string>> = {}
+    const images: Partial<Record<number, string>> = {}
     const aspects: Partial<Record<number, number>> = {}
     for (const t of tiles) aspects[t.tileIndex] = t.aspect
 
-    if (orientation === 'vertical') {
-      videos[0] = v[Math.floor(i / 2) % v.length]!
-    } else {
-      videos[0] = h[Math.floor(i / 2) % h.length]!
-    }
+    if (media.mediaType === 'image') images[0] = media.url
+    else videos[0] = media.url
+
+    const label =
+      media.title?.trim() ||
+      (media.section === 'stills' ? 'Still' : site.title)
 
     return {
       slug: site.slug,
-      name: site.title,
+      name: label,
       category: CATEGORY_LABEL[site.category],
       tagline: site.service,
       palette: paletteFor(i),
       artSeed: (i * 2654435761) >>> 0,
       orientation,
-      videos,
+      videos: Object.keys(videos).length ? videos : undefined,
+      images: Object.keys(images).length ? images : undefined,
       aspects,
     }
   })

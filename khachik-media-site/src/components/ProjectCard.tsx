@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import type { Project } from '../data/content'
 import { useBasePath } from '../hooks/useBasePath'
@@ -13,6 +14,63 @@ type Props = {
   frameHover?: boolean
   /** Films grid: open overlay instead of navigating to project detail */
   onOpen?: (project: Project) => void
+}
+
+function CoverMedia({ project }: { project: Project }) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const isVideo =
+    Boolean(project.coverUrl) &&
+    (project.coverType === 'video' ||
+      /\.(mp4|webm|mov)(\?|$)/i.test(project.coverUrl ?? ''))
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || !isVideo) return
+
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          if (video.preload !== 'auto') {
+            video.preload = 'auto'
+            video.load()
+          }
+          void video.play().catch(() => {})
+        } else {
+          video.pause()
+        }
+      },
+      { rootMargin: '120px 0px', threshold: 0.15 },
+    )
+    io.observe(video)
+    return () => io.disconnect()
+  }, [isVideo, project.coverUrl])
+
+  if (!project.coverUrl) return null
+
+  if (isVideo) {
+    return (
+      <video
+        ref={videoRef}
+        className={styles.coverMedia}
+        src={project.coverUrl}
+        muted
+        loop
+        playsInline
+        preload="none"
+        aria-hidden="true"
+      />
+    )
+  }
+
+  return (
+    <img
+      className={styles.coverMedia}
+      src={project.coverUrl}
+      alt=""
+      loading="lazy"
+      decoding="async"
+    />
+  )
 }
 
 function CardBody({
@@ -32,23 +90,7 @@ function CardBody({
         className={`${styles.media} ${tone === 'red' ? styles.red : styles.gray}`}
       >
         <div className={styles.fill}>
-          {project.coverUrl ? (
-            project.coverType === 'video' ||
-            /\.(mp4|webm|mov)(\?|$)/i.test(project.coverUrl) ? (
-              <video
-                className={styles.coverMedia}
-                src={project.coverUrl}
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="metadata"
-                aria-hidden="true"
-              />
-            ) : (
-              <img className={styles.coverMedia} src={project.coverUrl} alt="" />
-            )
-          ) : null}
+          <CoverMedia project={project} />
         </div>
         {frameHover ? (
           <>

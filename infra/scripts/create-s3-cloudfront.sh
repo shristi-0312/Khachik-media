@@ -95,7 +95,7 @@ DIST_JSON=$(aws cloudfront create-distribution --distribution-config "{
       \"Cookies\": { \"Forward\": \"none\" }
     },
     \"MinTTL\": 0,
-    \"DefaultTTL\": 86400,
+    \"DefaultTTL\": 31536000,
     \"MaxTTL\": 31536000
   }
 }")

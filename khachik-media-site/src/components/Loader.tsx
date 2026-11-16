@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { useLocation } from 'react-router-dom'
+import { bootCriticalMedia } from '../media/bootMedia'
 import styles from './Loader.module.css'
 
 type Props = {
@@ -13,6 +15,9 @@ type Props = {
  *   1. Khachik Media badge — viewport-fixed, never moves, always on top
  *   2. Red shutter — slides up on exit
  *   3. Home page (hero / video) — already painted underneath
+ *
+ * Progress is driven by real CDN asset boot (hero / above-fold media), with a
+ * short brand beat so the shutter never pops before the wordmark lands.
  */
 const WIDTH_START = 120
 const WIDTH_END = 219
@@ -37,12 +42,32 @@ function formatPercent(n: number) {
 }
 
 export function Loader({ onDone }: Props) {
+  const location = useLocation()
   const shutterRef = useRef<HTMLDivElement>(null)
   const badgeRef = useRef<HTMLDivElement>(null)
   const percentRef = useRef<HTMLSpanElement>(null)
   const brandRef = useRef<HTMLImageElement>(null)
   const onDoneRef = useRef(onDone)
   onDoneRef.current = onDone
+  const assetRatioRef = useRef(0)
+  const assetsReadyRef = useRef(false)
+
+  useEffect(() => {
+    let cancelled = false
+    void bootCriticalMedia(location.pathname, (ratio) => {
+      if (cancelled) return
+      assetRatioRef.current = ratio
+      if (ratio >= 0.99) assetsReadyRef.current = true
+    }).then(() => {
+      if (!cancelled) {
+        assetRatioRef.current = 1
+        assetsReadyRef.current = true
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [location.pathname])
 
   useEffect(() => {
     const badge = badgeRef.current
@@ -74,8 +99,10 @@ export function Loader({ onDone }: Props) {
 
       const countT = Math.min(1, Math.max(0, elapsed / COUNT_MS))
       const countEased = easeInOutCubic(countT)
-      const progress = Math.round(countEased * 100)
-      const width = WIDTH_START + (WIDTH_END - WIDTH_START) * countEased
+      // Never claim 100% until CDN boot is ready; never lag too far behind assets.
+      const blended = Math.max(countEased * 0.92, assetRatioRef.current)
+      const progress = Math.round(Math.min(assetsReadyRef.current ? 100 : 99, blended * 100))
+      const width = WIDTH_START + (WIDTH_END - WIDTH_START) * Math.min(1, blended)
 
       badge.style.width = `${width}px`
 
@@ -88,8 +115,9 @@ export function Loader({ onDone }: Props) {
       percentEl.style.opacity = String(1 - fade)
       brandEl.style.opacity = String(fade)
 
-      const exitAt = COUNT_MS + CROSSFADE_MS + BRAND_HOLD_MS
-      if (elapsed >= exitAt && !finished) {
+      const brandAt = COUNT_MS + CROSSFADE_MS + BRAND_HOLD_MS
+      const canExit = elapsed >= brandAt && assetsReadyRef.current
+      if (canExit && !finished) {
         finished = true
         percentEl.style.opacity = '0'
         brandEl.style.opacity = '1'

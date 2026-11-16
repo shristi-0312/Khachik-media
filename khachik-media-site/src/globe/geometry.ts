@@ -65,9 +65,9 @@ export function latticeGeometry(R: number, latLimitDeg: number) {
   const stepLon = cellU / R
   const stepLat = cellV / R
   const latMax = latLimitDeg * d2r
-  // Tight multi-stroke so fatness reads as one line (not parallel tracks).
-  const fat = (0.35 * GLOBE.latticeLineWidth) / R
-  const fatOffsets = [-fat, -fat * 0.5, 0, fat * 0.5, fat]
+  // Single hairline stroke — multi-offset fattening made the grid read bold vs Griflan.
+  const fat = (0.12 * GLOBE.latticeLineWidth) / R
+  const fatOffsets = fat > 1e-6 ? [-fat * 0.35, 0, fat * 0.35] : [0]
 
   const push = (lat: number, lon: number) => {
     const c = Math.cos(lat)

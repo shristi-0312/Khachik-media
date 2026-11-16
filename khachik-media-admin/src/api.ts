@@ -170,23 +170,27 @@ export async function uploadMediaFile(section: MediaSectionId, file: File) {
     if (err instanceof Error && err.message !== 'Failed to fetch') throw err
   }
 
-  const presign = await request<{ uploadUrl: string; publicUrl: string; key: string }>(
-    '/admin/uploads/presign-media',
-    {
-      method: 'POST',
-      body: JSON.stringify({
-        section,
-        contentType,
-        filename: file.name,
-      }),
-    },
-  )
+  const presign = await request<{
+    uploadUrl: string
+    publicUrl: string
+    key: string
+    cacheControl?: string
+  }>('/admin/uploads/presign-media', {
+    method: 'POST',
+    body: JSON.stringify({
+      section,
+      contentType,
+      filename: file.name,
+    }),
+  })
 
   let put: Response
   try {
+    const headers: Record<string, string> = { 'Content-Type': contentType }
+    if (presign.cacheControl) headers['Cache-Control'] = presign.cacheControl
     put = await fetch(presign.uploadUrl, {
       method: 'PUT',
-      headers: { 'Content-Type': contentType },
+      headers,
       body: file,
     })
   } catch {

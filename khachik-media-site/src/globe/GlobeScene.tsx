@@ -26,8 +26,8 @@ export interface GlobeSceneProps {
   /** When true (an overlay is open) input is ignored and the globe just drifts. */
   frozen?: boolean
   /**
-   * When true (home embed), vertical wheel scrolls the page instead of spinning
-   * the globe. Drag still rotates; horizontal trackpad swipe still spins.
+   * When true (home embed), vertical wheel / vertical gestures scroll the page.
+   * Drag still rotates; horizontal trackpad swipe still spins.
    */
   allowPageScroll?: boolean
 }
@@ -89,6 +89,13 @@ export function GlobeScene({
   const pageScrollRef = useRef(allowPageScroll)
   pageScrollRef.current = allowPageScroll
 
+  /** Pending pointer — only commit to drag after a clear horizontal intent. */
+  const pending = useRef<{
+    id: number
+    x: number
+    y: number
+  } | null>(null)
+
   /** Raw pointer on the sphere (target) + smoothed uniforms for the lattice glow. */
   const hover = useRef({
     tLat: 0,
@@ -108,7 +115,8 @@ export function GlobeScene({
       if (frozenRef.current) return
 
       if (pageScrollRef.current) {
-        if (Math.abs(e.deltaY) >= Math.abs(e.deltaX)) return
+        // Vertical / mostly-vertical → let the page scroll anywhere over the globe.
+        if (Math.abs(e.deltaY) >= Math.abs(e.deltaX) * 0.85) return
         e.preventDefault()
         s.tLon -= e.deltaX * GLOBE.wheelSens
         s.lastInput = performance.now()
@@ -122,38 +130,57 @@ export function GlobeScene({
     }
     const onDown = (e: PointerEvent) => {
       if (frozenRef.current || e.button !== 0) return
-      s.dragging = true
+      pending.current = { id: e.pointerId, x: e.clientX, y: e.clientY }
       s.pointerId = e.pointerId
       s.lastX = e.clientX
       s.lastY = e.clientY
-      s.lastInput = performance.now()
-      try {
-        el.setPointerCapture(e.pointerId)
-      } catch {
-        /* synthetic events have no capturable pointer */
-      }
+      s.dragging = false
     }
     const onMove = (e: PointerEvent) => {
-      if (!s.dragging || e.pointerId !== s.pointerId) return
+      if (e.pointerId !== s.pointerId) return
+
+      // Decide drag vs page-scroll before capturing the pointer.
+      if (!s.dragging && pending.current && pending.current.id === e.pointerId) {
+        const dx0 = e.clientX - pending.current.x
+        const dy0 = e.clientY - pending.current.y
+        const dist = Math.hypot(dx0, dy0)
+        if (dist < 8) return
+        if (pageScrollRef.current && Math.abs(dy0) > Math.abs(dx0) * 1.15) {
+          // Vertical intent → abandon drag so the page can scroll.
+          pending.current = null
+          s.pointerId = null
+          return
+        }
+        s.dragging = true
+        pending.current = null
+        try {
+          el.setPointerCapture(e.pointerId)
+        } catch {
+          /* synthetic events have no capturable pointer */
+        }
+      }
+
+      if (!s.dragging) return
       const dx = e.clientX - s.lastX
       const dy = e.clientY - s.lastY
       s.lastX = e.clientX
       s.lastY = e.clientY
+      // Free orbit: drag spins longitude and tilts the camera.
       s.tLon += dx * GLOBE.dragSens
-      if (!pageScrollRef.current) {
-        s.tPan = THREE.MathUtils.clamp(
-          s.tPan + (dy * GLOBE.panDragSens) / s.scale,
-          GLOBE.panMin * R,
-          GLOBE.panMax * R,
-        )
-      }
+      s.tPan = THREE.MathUtils.clamp(
+        s.tPan + (dy * GLOBE.panDragSens) / s.scale,
+        GLOBE.panMin * R,
+        GLOBE.panMax * R,
+      )
       s.lastInput = performance.now()
     }
     const onUp = (e: PointerEvent) => {
       if (e.pointerId !== s.pointerId) return
+      const wasDragging = s.dragging
       s.dragging = false
       s.pointerId = null
-      s.lastInput = performance.now()
+      pending.current = null
+      if (wasDragging) s.lastInput = performance.now()
       if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId)
     }
 
@@ -201,6 +228,7 @@ export function GlobeScene({
     if (group.current) {
       group.current.rotation.y = s.lon
       group.current.scale.setScalar(s.scale)
+      group.current.position.y = 0
     }
     camera.position.y = s.pan * s.scale
 
@@ -362,7 +390,12 @@ function Tile({
   frozenRef,
 }: TileProps) {
   const project = projects[slot.projectIndex]
-  const src = project?.videos?.[slot.tileIndex] ?? project?.videos?.[0] ?? ''
+  const src =
+    project?.videos?.[slot.tileIndex] ??
+    project?.videos?.[0] ??
+    project?.images?.[slot.tileIndex] ??
+    project?.images?.[0] ??
+    ''
   const phase = (slot.clusterIndex + slot.tileIndex) % 2
 
   const geometry = useMemo(() => tileGeometry(slot, R, FULL_UV), [slot])
