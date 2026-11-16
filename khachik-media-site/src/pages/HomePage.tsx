@@ -22,6 +22,22 @@ export function HomePage() {
       <div className={styles.page}>
         <Header />
         <section className={styles.hero}>
+          <video
+            className={styles.heroVideo}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            aria-hidden="true"
+          >
+            <source
+              src="https://d1rkq96nxpa3sq.cloudfront.net/media/hero/hero.mp4"
+              type="video/mp4"
+            />
+            <source src="/media/hero.mp4" type="video/mp4" />
+          </video>
+          <div className={styles.heroScrim} aria-hidden="true" />
           <Wordmark className={styles.wordmark} />
           <div className={styles.scrollCue}>
             <p className={styles.scrollLabel}>Scroll down</p>

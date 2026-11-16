@@ -4,7 +4,6 @@ export type MediaType = 'image' | 'video'
 export type MediaSectionId =
   | 'films_short_forms'
   | 'films_promotional'
-  | 'films_corporate'
   | 'films_advertisements'
   | 'stills'
   | 'globe_horizontal'
@@ -39,14 +38,27 @@ function authHeaders(): HeadersInit {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...authHeaders(),
-      ...(init?.headers ?? {}),
-    },
-  })
+  let res: Response
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders(),
+        ...(init?.headers ?? {}),
+      },
+    })
+  } catch {
+    throw new Error(
+      `Network error talking to ${API_URL}. Use https://65-2-150-121.sslip.io/admin and hard-refresh / re-login.`,
+    )
+  }
+
+  if (res.status === 401) {
+    localStorage.removeItem('km_token')
+    localStorage.removeItem('km_email')
+    throw new Error('Session expired — log in again.')
+  }
 
   if (!res.ok) {
     let message = res.statusText
@@ -114,11 +126,18 @@ export async function uploadMediaFile(section: MediaSectionId, file: File) {
     },
   )
 
-  const put = await fetch(presign.uploadUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': contentType },
-    body: file,
-  })
+  let put: Response
+  try {
+    put = await fetch(presign.uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': contentType },
+      body: file,
+    })
+  } catch {
+    throw new Error(
+      'S3 upload blocked (CORS/network). Bucket CORS must allow this admin origin.',
+    )
+  }
 
   if (!put.ok) {
     throw new Error(`S3 upload failed (${put.status})`)

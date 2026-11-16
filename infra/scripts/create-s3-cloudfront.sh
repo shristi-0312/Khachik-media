@@ -29,8 +29,18 @@ aws s3api put-bucket-cors --bucket "$BUCKET" --cors-configuration "{
   \"CORSRules\": [{
     \"AllowedHeaders\": [\"*\"],
     \"AllowedMethods\": [\"GET\", \"PUT\", \"HEAD\"],
-    \"AllowedOrigins\": [\"${ADMIN_ORIGIN}\", \"${SITE_ORIGIN}\", \"http://localhost:5174\"],
-    \"ExposeHeaders\": [\"ETag\"],
+    \"AllowedOrigins\": [
+      \"${ADMIN_ORIGIN}\",
+      \"${SITE_ORIGIN}\",
+      \"https://65-2-150-121.sslip.io\",
+      \"http://65-2-150-121.sslip.io\",
+      \"http://65.2.150.121\",
+      \"http://localhost:5173\",
+      \"http://localhost:5174\",
+      \"http://127.0.0.1:5173\",
+      \"http://127.0.0.1:5174\"
+    ],
+    \"ExposeHeaders\": [\"ETag\", \"Content-Type\", \"Content-Length\"],
     \"MaxAgeSeconds\": 3000
   }]
 }"

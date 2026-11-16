@@ -16,3 +16,6 @@ npm-debug.log*
 .venv-media/
 __pycache__/
 *.pyc
+# Large local hero masters (served from CloudFront in production)
+khachik-media-site/hero video.mp4
+khachik-media-site/public/media/hero.mp4
