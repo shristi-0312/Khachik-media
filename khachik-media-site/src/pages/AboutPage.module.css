@@ -82,7 +82,7 @@
 }
 
 /*
- * Figma Larsseit Bold 40 / 36, width 380, JUSTIFIED.
+ * Figma Larsseit Bold 40 / 36, width 380 — left-aligned, words tight.
  * Soft-wrap differs in browsers — hard line breaks match the design render:
  * WE ARE ALL ABOUT / HUMANE CONTENT & / HOLDING ATTENTION
  */
@@ -97,8 +97,7 @@
   line-height: 36px;
   letter-spacing: -2px;
   text-transform: uppercase;
-  text-align: justify;
-  text-align-last: justify;
+  text-align: left;
   color: var(--color-fg);
 }
 

@@ -96,8 +96,7 @@
   line-height: 36px;
   letter-spacing: -2px;
   text-transform: uppercase;
-  text-align: justify;
-  text-align-last: justify;
+  text-align: left;
   color: var(--color-fg);
   width: 380px;
 }

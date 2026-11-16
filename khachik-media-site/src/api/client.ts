@@ -1,6 +1,11 @@
 import type { Category, GallerySlot, Project } from '../data/content'
 
-const API_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? ''
+/** Production API fallback so Vercel builds still work if the env var is missing. */
+const DEFAULT_API_URL = 'https://65-2-150-121.sslip.io/api'
+const API_URL = (
+  (import.meta.env.VITE_API_URL as string | undefined)?.trim() ||
+  (import.meta.env.PROD ? DEFAULT_API_URL : '')
+).replace(/\/$/, '')
 
 export type ApiGalleryItem = {
   slot: string
