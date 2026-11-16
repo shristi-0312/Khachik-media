@@ -79,12 +79,29 @@ Redeploy the site so the SPA fetches projects from the API.
 
 Add repository secrets:
 
-- `EC2_HOST` — Elastic IP or hostname
+- `EC2_HOST` — Elastic IP or hostname (`65.2.150.121`)
 - `EC2_USER` — usually `ec2-user`
 - `EC2_SSH_KEY` — private key contents
 - `EC2_SSH_PORT` — optional, default `22`
 
 Push to `main` touching `khachik-media-api/**`, `khachik-media-admin/**`, or `infra/**` triggers [`.github/workflows/deploy-api.yml`](../.github/workflows/deploy-api.yml).
+
+### If Actions fail with “startup failure” / “account is locked due to a billing issue”
+
+GitHub will not start any runners until billing is clear — workflow YAML changes cannot fix this.
+
+1. Open [GitHub Billing](https://github.com/settings/billing)
+2. Fix the payment method / outstanding invoice / spending limit for Actions
+3. Re-run **CI** and **Deploy API + Admin** from the Actions tab
+
+### Manual deploy (bypass Actions)
+
+When Actions is locked, deploy from your Mac with the same PEM used for `EC2_SSH_KEY`:
+
+```bash
+chmod +x infra/scripts/manual-deploy.sh
+./infra/scripts/manual-deploy.sh /path/to/khachik.pem
+```
 
 ## Local development
 
