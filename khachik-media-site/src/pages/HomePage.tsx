@@ -37,7 +37,6 @@ export function HomePage() {
             />
             <source src="/media/hero.mp4" type="video/mp4" />
           </video>
-          <div className={styles.heroScrim} aria-hidden="true" />
           <Wordmark className={styles.wordmark} />
           <div className={styles.scrollCue}>
             <p className={styles.scrollLabel}>Scroll down</p>
