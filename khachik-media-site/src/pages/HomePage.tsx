@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useRef } from 'react'
+import { lazy, Suspense, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Artboard } from '../components/Artboard'
 import { ContactStrip } from '../components/ContactStrip'
@@ -19,10 +19,6 @@ const HomeGlobe = lazy(() =>
 export function HomePage() {
   const base = useBasePath()
   const heroRef = useRef<HTMLVideoElement>(null)
-  const globeScrollRef = useRef(0)
-  const onGlobeProgress = useCallback((t: number) => {
-    globeScrollRef.current = t
-  }, [])
 
   // After the loader warms the CDN cache, ensure the visible hero starts cleanly.
   useEffect(() => {
@@ -98,10 +94,10 @@ export function HomePage() {
           </div>
         </section>
 
-        <GlobeScrollStage onProgress={onGlobeProgress}>
+        <GlobeScrollStage>
           <div className={styles.globeSlot}>
             <Suspense fallback={<div className={styles.globeFallback} aria-hidden="true" />}>
-              <HomeGlobe scrollProgressRef={globeScrollRef} />
+              <HomeGlobe />
             </Suspense>
             <Link to={`${base}/films`} className={styles.viewAll}>
               View all

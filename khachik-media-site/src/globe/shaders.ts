@@ -89,17 +89,15 @@ export const latticeFragment = /* glsl */ `
   }
 
   void main() {
-    // Soft limb fade keeps the hairline grid readable without thickening it.
-    float face = smoothstep(-0.02, 0.55, vFacing);
+    float face = smoothstep(-0.05, 0.5, vFacing);
     float d = angDist(uHoverLat, uHoverLon, vLat, vLon);
-    // Soft red gradient falloff (Griflan scan) — wide gaussian, gentle peak.
-    float glow = uHoverOn * exp(-(d * d) / (uFalloff * uFalloff * 1.15));
-    glow = pow(glow, 0.85);
-    vec3 col = mix(uColor, uHoverColor, clamp(glow, 0.0, 1.0));
+    // Soft red Griflan scan — wide, luminous falloff under the cursor.
+    float glow = uHoverOn * exp(-(d * d) / (uFalloff * uFalloff));
+    glow = pow(glow, 0.78);
+    vec3 col = mix(uColor, uHoverColor, clamp(glow * 1.15, 0.0, 1.0));
     float a = mix(uAlpha, uHoverAlpha, glow) * face;
-    // Lit lines bloom softly near the cursor.
-    a = min(1.0, a * (1.0 + glow * 0.7));
-    if (a < 0.008) discard;
+    a = min(1.0, a * (1.0 + glow * 0.85));
+    if (a < 0.01) discard;
     gl_FragColor = vec4(col, a);
   }
 `

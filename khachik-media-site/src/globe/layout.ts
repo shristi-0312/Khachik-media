@@ -1,9 +1,8 @@
 import { GLOBE, clusterPitch } from './config'
 
 /**
- * A tile's place on the sphere, expressed in surface units (arc length in px
- * from the (lon 0, lat 0) point). u runs along the equator, v toward the poles.
- * `u`/`v` are the tile centre; geometry expands ±w/2, ±h/2.
+ * A tile's place on the sphere, in surface units (arc length).
+ * u along the equator, v toward the poles; centre ± w/2, ± h/2.
  */
 export interface TileSlot {
   id: string
@@ -31,38 +30,22 @@ export interface Layout {
   clusters: ClusterSlot[]
 }
 
+/** Alternating board accent — all boards are 2×2; flag kept for palette variety. */
 export function orientationForCluster(clusterIndex: number): 'horizontal' | 'vertical' {
   return clusterIndex % 2 === 0 ? 'horizontal' : 'vertical'
 }
 
 /**
- * Frame size in surface units. Edges always land on lattice lines
- * (integer multiples of tileW / tileH).
- *
- * Slot is a 3×3 cell block. Horizontal fills all 3×3.
- * Vertical fills 2×3, left-aligned in the slot (empty 1-col gutter on the right)
- * so both left and right edges sit on meridians.
+ * Griflan-style 2×2 collage — four unit cells, edges on the lattice.
  */
-function singleVideoFrame(orientation: 'horizontal' | 'vertical') {
-  const { tileW: W, tileH: H, clusterCols, clusterRows } = GLOBE
-  const slotW = clusterCols * W
-  const slotH = clusterRows * H
-
-  if (orientation === 'horizontal') {
-    return { w: slotW, h: slotH, du: 0, dv: 0 }
-  }
-  // 2×3 — left-aligned in the 3-col slot (edges on lattice).
-  const w = 2 * W
-  const h = slotH
-  // Slot centre is at +1.5W from left; 2-wide left-aligned centre is at +1W.
-  return { w, h, du: -0.5 * W, dv: 0 }
-}
-
-/** Kept for projects.ts compatibility — one tile, aspect of H or V frame. */
 export function boardTiles(clusterIndex: number): { tileIndex: number; aspect: number; area: number }[] {
-  const orientation = orientationForCluster(clusterIndex)
-  const { w, h } = singleVideoFrame(orientation)
-  return [{ tileIndex: 0, aspect: w / h, area: w * h }]
+  void clusterIndex
+  const { tileW: W, tileH: H } = GLOBE
+  return Array.from({ length: 4 }, (_, tileIndex) => ({
+    tileIndex,
+    aspect: W / H,
+    area: W * H,
+  }))
 }
 
 export function shapeForCluster(clusterIndex: number): string {
@@ -70,18 +53,17 @@ export function shapeForCluster(clusterIndex: number): string {
 }
 
 /**
- * Regular staggered grid of equal 3×3 slots. Slot centres sit on half-cell
- * lattice points so a 3-odd-wide frame has edges on meridians/parallels.
- * Odd clusters: vertical 2×3; even: horizontal 3×3 — one video each.
+ * Staggered grid of 2×2 boards. Each board’s four tiles sit on unit-cell centres
+ * so every edge snaps to a meridian / parallel.
  */
 export function buildLayout(projectCount: number): Layout {
-  const { gridCols, gridRows, staggerOddRows, tileW, tileH } = GLOBE
+  const { gridCols, gridRows, staggerOddRows, tileW, tileH, clusterCols, clusterRows } = GLOBE
   const { pitchX, pitchY } = clusterPitch()
 
   const tiles: TileSlot[] = []
   const clusters: ClusterSlot[] = []
 
-  // Half-cell shift: 3-wide / 3-tall frames then edge on integer lattice lines.
+  // Align board centre so a 2×2 lands on integer lattice lines.
   const alignU = 0.5 * tileW
   const alignV = 0.5 * tileH
 
@@ -93,7 +75,6 @@ export function buildLayout(projectCount: number): Layout {
       const slotV = (r - (gridRows - 1) / 2) * pitchY + alignV
       const projectIndex = clusterIndex % projectCount
       const orientation = orientationForCluster(clusterIndex)
-      const frame = singleVideoFrame(orientation)
 
       clusters.push({
         clusterIndex,
@@ -101,20 +82,29 @@ export function buildLayout(projectCount: number): Layout {
         u: slotU,
         v: slotV,
         orientation,
-        shape: orientation,
+        shape: '2x2',
       })
 
-      tiles.push({
-        id: `${clusterIndex}-0`,
-        clusterIndex,
-        projectIndex,
-        tileIndex: 0,
-        u: slotU + frame.du,
-        v: slotV + frame.dv,
-        w: frame.w,
-        h: frame.h,
-        orientation,
-      })
+      // 2×2 unit cells around the board centre.
+      let tileIndex = 0
+      for (let row = 0; row < clusterRows; row++) {
+        for (let col = 0; col < clusterCols; col++) {
+          const du = (col - (clusterCols - 1) / 2) * tileW
+          const dv = ((clusterRows - 1) / 2 - row) * tileH
+          tiles.push({
+            id: `${clusterIndex}-${tileIndex}`,
+            clusterIndex,
+            projectIndex,
+            tileIndex,
+            u: slotU + du,
+            v: slotV + dv,
+            w: tileW,
+            h: tileH,
+            orientation,
+          })
+          tileIndex++
+        }
+      }
       clusterIndex++
     }
   }

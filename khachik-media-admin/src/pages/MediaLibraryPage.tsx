@@ -164,11 +164,6 @@ export function MediaLibraryPage({ title, subtitle, tabs, accept, showMeta = fal
     }
   }
 
-  function moveTo(index: number, toIndex: number) {
-    if (reordering || index === toIndex) return
-    void persistOrder(moveItem(items, index, toIndex))
-  }
-
   if (!loggedIn) return <Navigate to="/login" replace />
 
   return (
@@ -178,7 +173,7 @@ export function MediaLibraryPage({ title, subtitle, tabs, accept, showMeta = fal
           <p className="eyebrow">{title}</p>
           <h2 style={{ margin: 0 }}>{subtitle}</h2>
           <p className="hint">
-            {hint} Drag cards or use the position controls to set 1st, 2nd, 3rd… on the public site.
+            {hint} Drag cards to rearrange — leftmost / topmost shows first on the public site.
           </p>
         </div>
         {reordering ? <p className="hint" style={{ margin: 0 }}>Saving order…</p> : null}
@@ -203,7 +198,7 @@ export function MediaLibraryPage({ title, subtitle, tabs, accept, showMeta = fal
 
       <section className="panel upload-panel">
         {showMeta ? (
-          <div className="form-grid" style={{ marginBottom: 16 }}>
+          <div className="form-grid" style={{ marginBottom: 12 }}>
             <label className="field">
               <span>Title (optional before upload)</span>
               <input
@@ -249,8 +244,6 @@ export function MediaLibraryPage({ title, subtitle, tabs, accept, showMeta = fal
               <MediaCard
                 key={item.id}
                 item={item}
-                index={index}
-                total={items.length}
                 showMeta={showMeta}
                 disabled={reordering || Boolean(busy)}
                 dragging={dragIndex === index}
@@ -258,9 +251,6 @@ export function MediaLibraryPage({ title, subtitle, tabs, accept, showMeta = fal
                 onToggle={() => void togglePublished(item)}
                 onSaveMeta={(nextTitle, nextDate) => void saveMeta(item, nextTitle, nextDate)}
                 onDelete={() => void remove(item)}
-                onMoveUp={() => moveTo(index, index - 1)}
-                onMoveDown={() => moveTo(index, index + 1)}
-                onMoveTo={(position) => moveTo(index, position - 1)}
                 onDragStart={() => {
                   setDragIndex(index)
                   setDropIndex(index)
@@ -288,8 +278,6 @@ export function MediaLibraryPage({ title, subtitle, tabs, accept, showMeta = fal
 
 function MediaCard({
   item,
-  index,
-  total,
   showMeta,
   disabled,
   dragging,
@@ -297,16 +285,11 @@ function MediaCard({
   onToggle,
   onSaveMeta,
   onDelete,
-  onMoveUp,
-  onMoveDown,
-  onMoveTo,
   onDragStart,
   onDragEnter,
   onDragEnd,
 }: {
   item: MediaItem
-  index: number
-  total: number
   showMeta: boolean
   disabled: boolean
   dragging: boolean
@@ -314,16 +297,12 @@ function MediaCard({
   onToggle: () => void
   onSaveMeta: (title: string, dateLabel: string) => void
   onDelete: () => void
-  onMoveUp: () => void
-  onMoveDown: () => void
-  onMoveTo: (position: number) => void
   onDragStart: () => void
   onDragEnter: () => void
   onDragEnd: () => void
 }) {
   const [title, setTitle] = useState(item.title)
   const [dateLabel, setDateLabel] = useState(item.dateLabel)
-  const position = index + 1
 
   useEffect(() => {
     setTitle(item.title)
@@ -352,8 +331,8 @@ function MediaCard({
       onDragEnd={onDragEnd}
     >
       <div className="media-card-preview">
-        <span className="media-order-badge" aria-label={`Position ${position}`}>
-          #{position}
+        <span className="media-drag-hint" aria-hidden="true">
+          ⋮⋮
         </span>
         {item.mediaType === 'video' ? (
           <video src={item.url} muted playsInline preload="metadata" controls />
@@ -362,45 +341,6 @@ function MediaCard({
         )}
       </div>
       <div className="media-card-body">
-        <div className="media-order-controls">
-          <label className="media-order-select">
-            <span>Order</span>
-            <select
-              value={position}
-              disabled={disabled || total < 2}
-              onChange={(e) => onMoveTo(Number(e.target.value))}
-              aria-label="Display order"
-            >
-              {Array.from({ length: total }, (_, i) => i + 1).map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                  {n === 1 ? ' (first)' : n === total ? ' (last)' : ''}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="media-order-buttons">
-            <button
-              type="button"
-              className="button secondary sm"
-              disabled={disabled || index === 0}
-              onClick={onMoveUp}
-              aria-label="Move earlier"
-            >
-              ↑
-            </button>
-            <button
-              type="button"
-              className="button secondary sm"
-              disabled={disabled || index === total - 1}
-              onClick={onMoveDown}
-              aria-label="Move later"
-            >
-              ↓
-            </button>
-          </div>
-        </div>
-
         {showMeta ? (
           <div className="stack tight">
             <input
@@ -423,6 +363,7 @@ function MediaCard({
         ) : (
           <p className="media-card-name">{item.title || item.url.split('/').pop()}</p>
         )}
+        <p className="media-card-drag-note">Drag to reorder</p>
         <div className="media-card-actions">
           <button type="button" className="button secondary sm" onClick={onToggle}>
             {item.published ? 'Hide' : 'Publish'}

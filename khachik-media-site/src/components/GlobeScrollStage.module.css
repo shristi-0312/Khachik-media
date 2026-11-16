@@ -1,9 +1,9 @@
 .track {
   position: relative;
   width: 100%;
-  /* Exactly one artboard-scaled viewport — no extra scroll inside this section */
+  /* One viewport — full-bleed; curved top comes from the 3D sphere */
   height: calc(100dvh / var(--artboard-scale, 1));
-  background: #141312;
+  background: #161414;
   overflow: hidden;
 }
 

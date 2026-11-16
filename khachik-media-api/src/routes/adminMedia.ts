@@ -3,7 +3,7 @@ import express, { Router } from 'express'
 import { requireAuth } from '../auth.js'
 import { prisma } from '../db.js'
 import { isMediaSection, type MediaSectionId } from '../mediaSections.js'
-import { createMediaPresignedUpload, putMediaObject } from '../s3.js'
+import { createMediaPresignedUpload, ensureGlobeThumb, putMediaObject } from '../s3.js'
 import { serializeMedia } from '../serializeMedia.js'
 import {
   mediaBodySchema,
@@ -157,6 +157,22 @@ adminMediaRouter.post('/uploads/presign-media', async (req, res) => {
   }
 })
 
+/** Build a small globe/grid JPEG after a browser PUT to a presigned URL. */
+adminMediaRouter.post('/uploads/ensure-thumb', async (req, res) => {
+  const key = typeof req.body?.key === 'string' ? req.body.key : undefined
+  const publicUrl = typeof req.body?.publicUrl === 'string' ? req.body.publicUrl : undefined
+  if (!key && !publicUrl) {
+    res.status(400).json({ error: 'key or publicUrl required' })
+    return
+  }
+  try {
+    const result = await ensureGlobeThumb({ key, publicUrl })
+    res.json(result)
+  } catch (err) {
+    console.error('ensure-thumb failed', err)
+    res.status(500).json({ error: 'Failed to generate thumb' })
+  }
+})
 /**
  * Browser → API → S3. Avoids browser↔S3 CORS entirely.
  * Send the raw file body; pass section/filename via query or headers.

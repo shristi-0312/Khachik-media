@@ -1,5 +1,11 @@
 import { apiConfigured, fetchMedia } from '../api/client'
-import { HERO_CDN_URL, HERO_FALLBACK_URL } from './cdn'
+import { globeTileUrl, HERO_CDN_URL, HERO_FALLBACK_URL } from './cdn'
+
+/** Local lightweight stills — paint the sphere before CDN thumbs arrive. */
+const LOCAL_GLOBE_STILLS = Array.from(
+  { length: 24 },
+  (_, i) => `/media/stills/still-${(i % 42) + 1}.jpg`,
+)
 
 /** Soft ceiling so a slow link never traps visitors behind the shutter forever. */
 const MAX_BOOT_MS = 14_000
@@ -177,12 +183,48 @@ export async function bootCriticalMedia(
   })()
 
   const extrasTask = (async () => {
-    if (!apiConfigured() || (kind !== 'films' && kind !== 'stills')) {
-      extrasRatio = 1
-      publish()
-      return
-    }
     try {
+      if (kind === 'home') {
+        // Warm local tiles first (tiny), then CDN globe thumbs so the section is full on open.
+        let done = 0
+        const local = LOCAL_GLOBE_STILLS
+        await Promise.all(
+          local.map(async (url) => {
+            await preloadImage(url)
+            done += 1
+            extrasRatio = (done / local.length) * 0.45
+            publish()
+          }),
+        )
+        if (apiConfigured()) {
+          const items = await fetchMedia('stills')
+          const thumbs = items
+            .filter((i) => i.mediaType === 'image' && i.url)
+            .slice(0, 28)
+            .map((i) => globeTileUrl(i.url))
+          if (thumbs.length) {
+            let tDone = 0
+            await Promise.all(
+              thumbs.map(async (url) => {
+                await preloadImage(url)
+                tDone += 1
+                extrasRatio = 0.45 + (tDone / thumbs.length) * 0.55
+                publish()
+              }),
+            )
+          }
+        }
+        extrasRatio = 1
+        publish()
+        return
+      }
+
+      if (!apiConfigured() || (kind !== 'films' && kind !== 'stills')) {
+        extrasRatio = 1
+        publish()
+        return
+      }
+
       if (kind === 'stills') {
         const items = await fetchMedia('stills')
         const urls = items.map((i) => i.url).filter(Boolean).slice(0, 6)

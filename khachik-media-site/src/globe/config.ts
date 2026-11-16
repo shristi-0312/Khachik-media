@@ -1,75 +1,69 @@
 /**
- * Every tunable for the globe. Units are CSS pixels at the sphere surface
- * (the orthographic camera is set up so 1 world unit = 1 CSS px).
+ * Tunables for the Griflan-style globe.
+ * Orthographic camera: 1 world unit ≈ 1 CSS px at the sphere surface.
  *
- * Project frames sit on the lattice:
- * - Horizontal video → 3×3 cells
- * - Vertical video   → 2×3 cells
- * Alternating around the sphere. One video per frame.
+ * Boards are 2×2 unit cells (Griflan collage blocks) on a dense lattice.
+ * Camera sits high enough that the upper surface curves into a horizon
+ * while the lower edge stays wide / full-bleed in the viewport.
  */
 export const GLOBE = {
-  // Unit cell — video edges snap to these lattice lines (no inner gap).
-  tileW: 112,
-  tileH: 112,
+  // Unit cell — board tiles and lattice share this spacing.
+  tileW: 96,
+  tileH: 96,
   tileGap: 0,
 
-  // Max footprint used for atlas / pitch (horizontal 3×3).
-  clusterCols: 3,
-  clusterRows: 3,
+  // 2×2 collage board (Griflan project block).
+  clusterCols: 2,
+  clusterRows: 2,
 
-  // Regular sphere grid of equal slots; each slot holds one H or V video.
-  gridCols: 10,
-  gridRows: 5,
-  /** Extra empty cells between frames so neighbours don’t collide. */
+  // Sphere packing — denser = more Griflan-like coverage.
+  gridCols: 12,
+  gridRows: 6,
+  /** Empty cells between boards so neighbours don’t collide. */
   slotPadCells: 1,
   staggerOddRows: true,
 
-  // On screen, the sphere is scaled so its radius = min(radiusVw × width, radiusVh × height).
-  // Slightly larger than before so the surface reads closer / more Griflan-like.
-  radiusVw: 0.62,
-  radiusVh: 1.05,
-  scaleMin: 0.7,
-  scaleMax: 2.8,
-
-  // Lattice follows unit cells so video edges sit on the grid.
-  latticeLatLimitDeg: 86,
   /**
-   * Hairline lattice (labs.griflan.com). WebGL often ignores lineWidth, so
-   * geometry.ts uses a single stroke — keep this ≤ 1 for a thin read.
+   * Sphere fills most of the viewport. Slightly >0.5 width so the surface
+   * is close; top curves into a rounded horizon, bottom stays wide.
    */
-  latticeLineWidth: 0.9,
-  /** Unused by the lattice-scan glow; kept for geometry helpers. */
-  hoverLineWidth: 1.2,
+  radiusVw: 0.56,
+  radiusVh: 0.98,
+  scaleMin: 0.7,
+  scaleMax: 2.6,
 
-  /** Camera height as a fraction of R — higher = more horizon / bird’s-eye. */
-  panDefault: 0.48,
-  panMin: 0.12,
-  panMax: 0.72,
+  latticeLatLimitDeg: 86,
+  /** Hairline lattice (WebGL often ignores lineWidth). */
+  latticeLineWidth: 0.85,
+  hoverLineWidth: 1.1,
 
-  driftRadPerSec: 0.028,
-  idleDelayMs: 1100,
+  /**
+   * High enough for a curved horizon at top, low enough that boards fill
+   * the mid/lower frame (less empty pole space).
+   */
+  panDefault: 0.42,
+  panMin: 0.22,
+  panMax: 0.68,
+
+  driftRadPerSec: 0.026,
+  idleDelayMs: 1000,
   wheelSens: 0.0014,
-  dragSens: 0.0024,
-  panDragSens: 1.15,
+  dragSens: 0.0022,
+  panDragSens: 1.05,
   damping: 7,
 
-  bg: '#141312',
+  bg: '#161414',
   cream: '#fffddb',
-  /** Soft neon-red like labs.griflan.com hover (not flat brand fill). */
+  /** Soft neon-red lattice hover (labs.griflan.com). */
   red: '#e0122e',
   lattice: '#fffddb',
-  latticeAlpha: 0.28,
-  /** Peak opacity of cursor-lit lattice lines. */
+  latticeAlpha: 0.32,
   hoverLatticeAlpha: 1,
-  /**
-   * Soft red scan radius in unit-cells (Griflan ~2–4). Wider = softer gradient.
-   */
-  hoverRadiusCells: 4.2,
-  /** Lerp rate for cursor follow on the lattice (higher = snappier). */
-  hoverFollow: 11,
+  hoverRadiusCells: 3.6,
+  hoverFollow: 12,
 } as const
 
-/** Pitch between cluster centres (3-cell frame + pad). */
+/** Pitch between cluster centres (board + pad). */
 export function clusterPitch() {
   const { tileW, tileH, clusterCols, clusterRows, slotPadCells } = GLOBE
   return {
@@ -78,5 +72,5 @@ export function clusterPitch() {
   }
 }
 
-/** Sphere radius derived from the grid so columns wrap seamlessly. */
+/** Sphere radius so columns wrap seamlessly. */
 export const R = (GLOBE.gridCols * clusterPitch().pitchX) / (2 * Math.PI)

@@ -9,14 +9,12 @@ export interface Project {
   name: string
   category: string
   tagline: string
-  /** Photo stills by tile index. */
+  /** Photo stills by tile index (0–3 in a 2×2 board). */
   images?: Partial<Record<number, string>>
-  /** Looping clips by tile index — one video per board. */
+  /** Looping clips by tile index. */
   videos?: Partial<Record<number, string>>
-  /** Real width / height of each tile on the sphere, so atlas art isn't stretched. */
   aspects?: Partial<Record<number, number>>
   palette?: [string, string, string]
-  /** Seed for which graphic variants appear inside this board. */
   artSeed: number
   orientation: 'horizontal' | 'vertical'
 }
@@ -32,11 +30,8 @@ function hsl(h: number, s: number, l: number) {
   return `hsl(${((h % 360) + 360) % 360} ${s}% ${l}%)`
 }
 
-const HUE_FAMILIES = [
-  178, 6, 44, 148, 214, 18, 292, 78,
-] as const
+const HUE_FAMILIES = [178, 6, 44, 148, 214, 18, 292, 78] as const
 
-/** One cohesive [bg, fg, accent] per board, all in the same hue family. */
 export function paletteFor(i: number): [string, string, string] {
   const hue = HUE_FAMILIES[i % HUE_FAMILIES.length]! + ((i * 3) % 9) - 4
   switch (Math.floor(i / HUE_FAMILIES.length) % 3) {
@@ -51,23 +46,17 @@ export function paletteFor(i: number): [string, string, string] {
 
 export const PALETTES: [string, string, string][] = Array.from({ length: 48 }, (_, i) => paletteFor(i))
 
-/** Local HQ fallbacks — landscape frames (3×3 slots). */
-const GLOBE_REELS_H = [
+const GLOBE_REELS = [
   '/media/hq/h1.mp4',
   '/media/hq/h2.mp4',
+  '/media/hq/h3.mp4',
   '/media/hq/h4.mp4',
   '/media/hq/h5.mp4',
-] as const
-
-/** Local HQ fallbacks — portrait frames (2×3 slots). */
-const GLOBE_REELS_V = [
   '/media/hq/v1.mp4',
   '/media/hq/v2.mp4',
-  '/media/hq/h3.mp4',
 ] as const
 
-/** Local still fallbacks mixed onto the sphere with reels. */
-const GLOBE_STILLS = Array.from({ length: 24 }, (_, i) => `/media/stills/still-${i + 1}.jpg`)
+const GLOBE_STILLS = Array.from({ length: 42 }, (_, i) => `/media/stills/still-${(i % 42) + 1}.jpg`)
 
 const CATEGORY_LABEL: Record<Category, string> = {
   promotional: 'Promotional',
@@ -75,62 +64,49 @@ const CATEGORY_LABEL: Record<Category, string> = {
   'short-forms': 'Short-form',
 }
 
-/** Matches the sphere grid (gridCols × gridRows). */
-const GLOBE_COUNT = 50
+/** Matches denser sphere packing (gridCols × gridRows). */
+const GLOBE_COUNT = 72
 
-function preferVertical(item: GlobeMediaItem) {
-  if (item.section === 'films_short_forms' || item.section === 'globe_vertical') return true
-  if (item.section === 'films_promotional' || item.section === 'films_advertisements') return false
-  if (item.section === 'globe_horizontal') return false
-  // Stills + unknowns: alternate by hashing the URL.
-  let h = 0
-  for (let i = 0; i < item.url.length; i++) h = (h * 31 + item.url.charCodeAt(i)) | 0
-  return (h & 1) === 1
-}
-
-function splitByOrientation(items: GlobeMediaItem[]) {
-  const horizontal: GlobeMediaItem[] = []
-  const vertical: GlobeMediaItem[] = []
-  for (const item of items) {
-    if (preferVertical(item)) vertical.push(item)
-    else horizontal.push(item)
-  }
-  return { horizontal, vertical }
-}
+/** Cap unique CDN assets so the sphere paints like Griflan (many small tiles). */
+const MAX_UNIQUE_STILLS = 36
+const MAX_UNIQUE_VIDEOS = 4
 
 function localFallbackItems(): GlobeMediaItem[] {
-  const videosH = GLOBE_REELS_H.map((url) => ({
-    url,
-    mediaType: 'video' as const,
-    section: 'globe_horizontal',
-  }))
-  const videosV = GLOBE_REELS_V.map((url) => ({
-    url,
-    mediaType: 'video' as const,
-    section: 'globe_vertical',
-  }))
-  const stills = GLOBE_STILLS.map((url, i) => ({
-    url,
-    mediaType: 'image' as const,
-    section: 'stills',
-    title: `Still ${i + 1}`,
-  }))
-  // Interleave so the sphere reads as a mixed reel + still collage.
   const out: GlobeMediaItem[] = []
-  const max = Math.max(videosH.length + videosV.length, stills.length)
-  let vi = 0
-  const vids = [...videosH, ...videosV]
-  for (let i = 0; i < max; i++) {
-    if (i % 3 !== 2 && vi < vids.length) out.push(vids[vi++]!)
-    if (stills[i]) out.push(stills[i]!)
+  for (let i = 0; i < GLOBE_STILLS.length; i++) {
+    out.push({
+      url: GLOBE_STILLS[i]!,
+      mediaType: 'image',
+      section: 'stills',
+      title: `Still ${i + 1}`,
+    })
   }
-  while (vi < vids.length) out.push(vids[vi++]!)
+  // A few local reels only — never block first paint on HQ streams.
+  for (let i = 0; i < Math.min(MAX_UNIQUE_VIDEOS, GLOBE_REELS.length); i++) {
+    out.push({
+      url: GLOBE_REELS[i]!,
+      mediaType: 'video',
+      section: 'globe_horizontal',
+    })
+  }
+  return out
+}
+
+function uniqueByUrl(items: GlobeMediaItem[], limit: number): GlobeMediaItem[] {
+  const seen = new Set<string>()
+  const out: GlobeMediaItem[] = []
+  for (const item of items) {
+    if (seen.has(item.url)) continue
+    seen.add(item.url)
+    out.push(item)
+    if (out.length >= limit) break
+  }
   return out
 }
 
 /**
- * Build sphere projects from a mixed library (films + stills + globe clips).
- * Falls back to local HQ reels + stills when the library is empty.
+ * Build sphere projects as Griflan-style 2×2 boards.
+ * Stills-first with a hard cap on unique URLs so CDN HQ never stalls the section.
  */
 export function buildGlobeProjects(
   library: GlobeMediaItem[] = [],
@@ -139,7 +115,6 @@ export function buildGlobeProjects(
 ): Project[] {
   let items = library.filter((m) => Boolean(m.url))
 
-  // Legacy path: separate H/V URL lists from older callers.
   if (!items.length && (horizontalUrls?.length || verticalUrls?.length)) {
     items = [
       ...(horizontalUrls ?? []).map((url) => ({
@@ -157,28 +132,39 @@ export function buildGlobeProjects(
 
   if (!items.length) items = localFallbackItems()
 
-  const { horizontal, vertical } = splitByOrientation(items)
-  const hPool = horizontal.length ? horizontal : items
-  const vPool = vertical.length ? vertical : items
+  const stills = uniqueByUrl(
+    items.filter((m) => m.mediaType === 'image'),
+    MAX_UNIQUE_STILLS,
+  )
+  const videosOnly = uniqueByUrl(
+    items.filter((m) => m.mediaType === 'video'),
+    MAX_UNIQUE_VIDEOS,
+  )
+  // If API returned only multi-MB originals without usable stills, keep local tiles.
+  const fillPool = stills.length ? stills : localFallbackItems().filter((m) => m.mediaType === 'image')
 
   return Array.from({ length: GLOBE_COUNT }, (_, i) => {
     const site = SITE_PROJECTS[i % SITE_PROJECTS.length]!
     const tiles = boardTiles(i)
     const orientation = orientationForCluster(i)
-    const pool = orientation === 'vertical' ? vPool : hPool
-    const media = pool[Math.floor(i / 2) % pool.length]!
 
     const videos: Partial<Record<number, string>> = {}
     const images: Partial<Record<number, string>> = {}
     const aspects: Partial<Record<number, number>> = {}
     for (const t of tiles) aspects[t.tileIndex] = t.aspect
 
-    if (media.mediaType === 'image') images[0] = media.url
-    else videos[0] = media.url
+    // Mostly stills; sprinkle at most one video cell per board, sparsely.
+    for (let t = 0; t < 4; t++) {
+      const useVideo = videosOnly.length > 0 && t === 0 && i % 6 === 0
+      const media = useVideo
+        ? videosOnly[Math.floor(i / 6) % videosOnly.length]!
+        : fillPool[(i * 4 + t) % fillPool.length]!
+      if (media.mediaType === 'image') images[t] = media.url
+      else videos[t] = media.url
+    }
 
-    const label =
-      media.title?.trim() ||
-      (media.section === 'stills' ? 'Still' : site.title)
+    const first = fillPool[i % fillPool.length]!
+    const label = first.title?.trim() || site.title
 
     return {
       slug: site.slug,
@@ -197,6 +183,4 @@ export function buildGlobeProjects(
 
 export const PROJECTS: Project[] = buildGlobeProjects()
 
-export const TICKER_ITEMS = SITE_PROJECTS.map(
-  (p) => `${p.title} — ${p.client}`,
-)
+export const TICKER_ITEMS = SITE_PROJECTS.map((p) => `${p.title} — ${p.client}`)

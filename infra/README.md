@@ -22,13 +22,20 @@ chmod +x infra/scripts/create-s3-cloudfront.sh
 
 Save the printed `CLOUDFRONT_URL`.
 
-New uploads set `Cache-Control: public, max-age=31536000, immutable`. For objects already in the bucket, backfill once:
+New uploads set `Cache-Control: public, max-age=31536000, immutable`. Image uploads also write a ~720px globe tile at `media/{section}/thumbs/{id}.jpg`. For objects already in the bucket, backfill once:
 
 ```bash
 chmod +x infra/scripts/backfill-s3-cache-control.sh
 ./infra/scripts/backfill-s3-cache-control.sh
 # optional second pass for project uploads:
 ./infra/scripts/backfill-s3-cache-control.sh projects/
+
+# Globe tiles for existing stills (11MB → ~40KB):
+cd khachik-media-api && node scripts/generate-still-thumbs.mjs
+
+# CORS + long-cache response headers on CloudFront:
+chmod +x infra/scripts/strengthen-cloudfront-headers.sh
+./infra/scripts/strengthen-cloudfront-headers.sh
 ```
 
 Create an IAM role for EC2 using [`iam/ec2-s3-policy.json`](iam/ec2-s3-policy.json) (update the bucket name if different) and attach it to the instance. Prefer the instance role over long-lived access keys.

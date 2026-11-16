@@ -8,5 +8,14 @@ export default defineConfig({
     host: true,
     port: 5173,
     strictPort: true,
+    proxy: {
+      // Same-origin media for WebGL (CloudFront CORS is unreliable for textures).
+      '/cf': {
+        target: 'https://d1rkq96nxpa3sq.cloudfront.net',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/cf/, ''),
+      },
+    },
   },
 })

@@ -2,10 +2,8 @@ import * as THREE from 'three'
 
 /**
  * Shared HTMLVideoElement / Image + Texture pool for globe tiles.
- * Videos stay native-resolution VideoTextures; stills use TextureLoader.
- *
- * Downloads are capped so the globe does not fan out dozens of HQ CDN streams
- * at once (which starves the hero / films grids).
+ * Stills are decoded into ~640px bitmaps so multi-megapixel CDN originals
+ * never hit the GPU. Video downloads stay gated.
  */
 export interface VideoPool {
   /** Texture for a clip or still. `phase` offsets video start so neighbours don't sync. */
@@ -24,7 +22,11 @@ type Entry = {
 }
 
 /** Max concurrent HQ video downloads from the CDN. */
-const MAX_CONCURRENT_VIDEO_LOADS = 4
+const MAX_CONCURRENT_VIDEO_LOADS = 3
+/** Max concurrent still fetches (tiles are small; allow a wider fan-out). */
+const MAX_CONCURRENT_IMAGE_LOADS = 12
+/** GPU long-edge for still textures — Griflan-sized boards, not camera files. */
+const IMAGE_GPU_MAX_EDGE = 640
 
 function isImageSrc(src: string) {
   return /\.(jpe?g|png|webp|gif|avif)(\?|$)/i.test(src)
@@ -67,8 +69,7 @@ function createLoopingVideo(
   video.preload = 'none'
   video.setAttribute('playsinline', '')
   video.setAttribute('muted', '')
-  video.crossOrigin = 'anonymous'
-  // Keep element in the document so Safari will decode frames for WebGL.
+  if (/^https?:\/\//i.test(src)) video.crossOrigin = 'anonymous'
   Object.assign(video.style, {
     position: 'fixed',
     width: '1px',
@@ -113,13 +114,77 @@ function createLoopingVideo(
   return video
 }
 
+function localStillFallback(src: string) {
+  if (src.startsWith('/media/stills/still-')) return null
+  let h = 0
+  for (let i = 0; i < src.length; i++) h = (h * 31 + src.charCodeAt(i)) | 0
+  return `/media/stills/still-${(Math.abs(h) % 42) + 1}.jpg`
+}
+
+async function decodeImageTile(src: string): Promise<{ bitmap: ImageBitmap; aspect: number }> {
+  const res = await fetch(src, { mode: 'cors', credentials: 'omit', cache: 'force-cache' })
+  if (!res.ok) {
+    const fb = localStillFallback(src)
+    if (fb) return decodeImageTile(fb)
+    throw new Error(`image ${res.status}`)
+  }
+  const blob = await res.blob()
+
+  // Prefer browser resize during decode (avoids uploading 11MP to GPU).
+  if (typeof createImageBitmap === 'function') {
+    try {
+      const probe = await createImageBitmap(blob)
+      const w = probe.width
+      const h = probe.height
+      const aspect = w > 0 && h > 0 ? w / h : 1
+      const long = Math.max(w, h)
+      if (long > IMAGE_GPU_MAX_EDGE) {
+        const scale = IMAGE_GPU_MAX_EDGE / long
+        probe.close()
+        const bitmap = await createImageBitmap(blob, {
+          resizeWidth: Math.max(1, Math.round(w * scale)),
+          resizeHeight: Math.max(1, Math.round(h * scale)),
+          resizeQuality: 'high',
+        })
+        return { bitmap, aspect }
+      }
+      return { bitmap: probe, aspect }
+    } catch {
+      /* fall through */
+    }
+  }
+
+  const url = URL.createObjectURL(blob)
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image()
+      el.onload = () => resolve(el)
+      el.onerror = () => reject(new Error('img'))
+      el.src = url
+    })
+    const aspect = img.naturalWidth / Math.max(1, img.naturalHeight)
+    const long = Math.max(img.naturalWidth, img.naturalHeight)
+    const scale = long > IMAGE_GPU_MAX_EDGE ? IMAGE_GPU_MAX_EDGE / long : 1
+    const cw = Math.max(1, Math.round(img.naturalWidth * scale))
+    const ch = Math.max(1, Math.round(img.naturalHeight * scale))
+    const canvas = document.createElement('canvas')
+    canvas.width = cw
+    canvas.height = ch
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('2d')
+    ctx.drawImage(img, 0, 0, cw, ch)
+    const bitmap = await createImageBitmap(canvas)
+    return { bitmap, aspect }
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}
+
 export function buildVideoPool(): VideoPool {
   const map = new Map<string, Entry>()
-  const gate = createLoadGate(MAX_CONCURRENT_VIDEO_LOADS)
-  const loader = new THREE.TextureLoader()
-  loader.setCrossOrigin('anonymous')
+  const videoGate = createLoadGate(MAX_CONCURRENT_VIDEO_LOADS)
+  const imageGate = createLoadGate(MAX_CONCURRENT_IMAGE_LOADS)
 
-  // One element per unique CDN URL — phase only affects start offset for new entries.
   const keyOf = (src: string) => src
 
   const ensure = (src: string, phase = 0): Entry => {
@@ -128,35 +193,45 @@ export function buildVideoPool(): VideoPool {
     if (entry) return entry
 
     if (isImageSrc(src)) {
-      const texture = loader.load(
-        src,
-        (tex) => {
-          const img = tex.image as HTMLImageElement | undefined
-          if (img?.naturalWidth && img?.naturalHeight) {
-            const e = map.get(key)
-            if (e) e.aspect = img.naturalWidth / img.naturalHeight
-          }
-          tex.needsUpdate = true
-        },
-      )
+      const texture = new THREE.Texture()
       texture.colorSpace = THREE.SRGBColorSpace
       texture.generateMipmaps = false
       texture.minFilter = THREE.LinearFilter
       texture.magFilter = THREE.LinearFilter
-      texture.anisotropy = 8
+      texture.anisotropy = 4
       texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping
       entry = { kind: 'image', texture, aspect: 0 }
       map.set(key, entry)
+
+      imageGate.schedule(() => {
+        void decodeImageTile(src)
+          .then(({ bitmap, aspect }) => {
+            const e = map.get(key)
+            if (!e) {
+              bitmap.close()
+              imageGate.release()
+              return
+            }
+            e.aspect = aspect
+            e.texture.image = bitmap
+            e.texture.needsUpdate = true
+            imageGate.release()
+          })
+          .catch(() => {
+            imageGate.release()
+          })
+      })
+
       return entry
     }
 
-    const video = createLoopingVideo(src, phase * 3.3, gate)
+    const video = createLoopingVideo(src, phase * 3.3, videoGate)
     const texture = new THREE.VideoTexture(video)
     texture.colorSpace = THREE.SRGBColorSpace
     texture.generateMipmaps = false
     texture.minFilter = THREE.LinearFilter
     texture.magFilter = THREE.LinearFilter
-    texture.anisotropy = 8
+    texture.anisotropy = 4
     texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping
 
     entry = { kind: 'video', video, texture, aspect: 0 }
@@ -193,7 +268,15 @@ export function buildVideoPool(): VideoPool {
     },
     dispose() {
       for (const { video, texture } of map.values()) {
+        const img = texture.image
         texture.dispose()
+        if (img && typeof (img as ImageBitmap).close === 'function') {
+          try {
+            ;(img as ImageBitmap).close()
+          } catch {
+            /* ignore */
+          }
+        }
         if (video) {
           video.pause()
           video.removeAttribute('src')

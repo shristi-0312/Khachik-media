@@ -1,12 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type MutableRefObject,
-} from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Canvas } from '@react-three/fiber'
 import * as THREE from 'three'
@@ -22,49 +14,30 @@ import {
 } from '../globe/projects'
 import { buildVideoPool, type VideoPool } from '../globe/videoPool'
 import { useBasePath } from '../hooks/useBasePath'
+import { globeMediaUrl, globeTileUrl } from '../media/cdn'
 import styles from './HomeGlobe.module.css'
 
 function toGlobeMedia(items: ApiMediaItem[]): GlobeMediaItem[] {
   return items
     .filter((i) => i.published !== false && i.url)
     .map((i) => ({
-      url: i.url,
+      // Stills → CDN thumbs (~100KB); videos → same-origin /cf proxy.
+      url: i.mediaType === 'image' ? globeTileUrl(i.url) : globeMediaUrl(i.url),
       mediaType: i.mediaType,
       title: i.title,
       section: i.section,
     }))
 }
 
-const ZERO_SCROLL = { current: 0 } as MutableRefObject<number>
-
-/** Interactive globe — mixed S3 films/stills, hairline lattice, free drag. */
-export function HomeGlobe({
-  scrollProgressRef = ZERO_SCROLL,
-}: {
-  scrollProgressRef?: MutableRefObject<number>
-}) {
+/** Griflan-style globe — curved horizon, 2×2 boards, drag to explore. */
+export function HomeGlobe() {
   const host = useRef<HTMLDivElement>(null)
-  const vignette = useRef<HTMLDivElement>(null)
   const [ready, setReady] = useState(false)
-  /** Wait until near the viewport so hero CDN boot is not starved by dozens of HQ clips. */
   const [nearView, setNearView] = useState(false)
   const [videos, setVideos] = useState<VideoPool | null>(null)
   const [globeProjects, setGlobeProjects] = useState<GlobeProject[]>(PROJECTS)
   const navigate = useNavigate()
   const base = useBasePath()
-
-  // Keep CSS soft-red intensity in sync without React re-renders.
-  useEffect(() => {
-    let raf = 0
-    const tick = () => {
-      raf = requestAnimationFrame(tick)
-      const el = vignette.current
-      if (!el) return
-      el.style.setProperty('--globe-scroll', String(scrollProgressRef.current))
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [scrollProgressRef])
 
   useEffect(() => {
     const el = host.current
@@ -106,7 +79,6 @@ export function HomeGlobe({
     }
   }, [nearView])
 
-  // Pull every library section (films + stills + globe clips) and mix onto the sphere.
   useEffect(() => {
     if (!nearView || !apiConfigured()) return
     let cancelled = false
@@ -125,7 +97,6 @@ export function HomeGlobe({
     }
   }, [nearView])
 
-  // Native VideoTextures / still textures so HQ stays sharp on large frames.
   useEffect(() => {
     if (!nearView) return
     const next = buildVideoPool()
@@ -210,7 +181,8 @@ export function HomeGlobe({
         </Canvas>
       ) : null}
 
-      <div ref={vignette} className={styles.vignette} aria-hidden="true" />
+      <div className={styles.vignette} aria-hidden="true" />
+      <div className={styles.redGlow} aria-hidden="true" />
       <span ref={leftReadout} className={`${styles.readout} ${styles.readoutLeft}`}>
         0.000000
       </span>
