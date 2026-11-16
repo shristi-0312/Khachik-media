@@ -4,9 +4,18 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   api:
+    name: Build API
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -23,6 +32,7 @@ jobs:
       - run: npm run build
 
   admin:
+    name: Build Admin
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -40,6 +50,7 @@ jobs:
           VITE_API_URL: https://65-2-150-121.sslip.io/api
 
   site:
+    name: Build Site
     runs-on: ubuntu-latest
     defaults:
       run:
