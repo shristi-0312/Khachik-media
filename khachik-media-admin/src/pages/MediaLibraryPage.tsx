@@ -172,7 +172,7 @@ export function MediaLibraryPage({ title, subtitle, tabs, accept, showMeta = fal
               />
             </label>
             <label className="field">
-              <span>Date label</span>
+              <span>Date label (optional)</span>
               <input
                 value={draftDate}
                 onChange={(e) => setDraftDate(e.target.value)}

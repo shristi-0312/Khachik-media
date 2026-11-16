@@ -61,7 +61,6 @@ const GLOBE_REELS_V = [
 
 const CATEGORY_LABEL: Record<Category, string> = {
   promotional: 'Promotional',
-  corporate: 'Corporate',
   advertisements: 'Ads',
   'short-forms': 'Short-form',
 }

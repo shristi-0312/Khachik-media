@@ -111,9 +111,58 @@ export async function deleteMedia(id: string) {
   return request<void>(`/admin/media/${id}`, { method: 'DELETE' })
 }
 
-/** Browser → S3 PUT of the original file (no recompression). */
+function mediaTypeFor(file: File, contentType: string): MediaType {
+  if (contentType.startsWith('video/')) return 'video'
+  if (contentType.startsWith('image/')) return 'image'
+  return file.name.match(/\.(mp4|webm|mov)$/i) ? 'video' : 'image'
+}
+
+async function uploadViaApiProxy(section: MediaSectionId, file: File, contentType: string) {
+  const q = new URLSearchParams({ section, filename: file.name })
+  const res = await fetch(`${API_URL}/admin/uploads/media-file?${q}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': contentType,
+      ...authHeaders(),
+    },
+    body: file,
+  })
+
+  if (res.status === 404) return null
+
+  if (res.status === 401) {
+    localStorage.removeItem('km_token')
+    localStorage.removeItem('km_email')
+    throw new Error('Session expired — log in again.')
+  }
+
+  if (!res.ok) {
+    let message = res.statusText
+    try {
+      const body = (await res.json()) as { error?: unknown }
+      message = typeof body.error === 'string' ? body.error : JSON.stringify(body.error ?? body)
+    } catch {
+      /* ignore */
+    }
+    throw new Error(message || `Upload failed (${res.status})`)
+  }
+
+  return (await res.json()) as { key: string; publicUrl: string }
+}
+
+/** Upload original bytes via API→S3 (avoids browser↔S3 CORS). Falls back to presign. */
 export async function uploadMediaFile(section: MediaSectionId, file: File) {
   const contentType = file.type || 'application/octet-stream'
+  const mediaType = mediaTypeFor(file, contentType)
+
+  try {
+    const proxied = await uploadViaApiProxy(section, file, contentType)
+    if (proxied) return { ...proxied, mediaType }
+  } catch (err) {
+    // If the proxy route exists and failed for a real reason, surface it.
+    if (err instanceof Error && err.message !== 'Failed to fetch') throw err
+  }
+
   const presign = await request<{ uploadUrl: string; publicUrl: string; key: string }>(
     '/admin/uploads/presign-media',
     {
@@ -135,21 +184,13 @@ export async function uploadMediaFile(section: MediaSectionId, file: File) {
     })
   } catch {
     throw new Error(
-      'S3 upload blocked (CORS/network). Bucket CORS must allow this admin origin.',
+      'Upload failed reaching S3. Redeploy API/admin so uploads go through the API proxy.',
     )
   }
 
   if (!put.ok) {
     throw new Error(`S3 upload failed (${put.status})`)
   }
-
-  const mediaType: MediaType = contentType.startsWith('video/')
-    ? 'video'
-    : contentType.startsWith('image/')
-      ? 'image'
-      : file.name.match(/\.(mp4|webm|mov)$/i)
-        ? 'video'
-        : 'image'
 
   return { ...presign, mediaType }
 }

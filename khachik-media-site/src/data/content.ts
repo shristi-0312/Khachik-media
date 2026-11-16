@@ -1,4 +1,4 @@
-export type Category = 'promotional' | 'corporate' | 'advertisements' | 'short-forms'
+export type Category = 'promotional' | 'advertisements' | 'short-forms'
 
 export type MediaType = 'image' | 'video'
 
@@ -33,11 +33,10 @@ export type Project = {
   gallery?: GalleryItem[]
 }
 
-/** Figma Projects filters 118:3190 — four tabs, gap 32. */
+/** Films filters — Short-forms / Promotional / Advertisements. */
 export const CATEGORIES: { id: Category; label: string }[] = [
   { id: 'short-forms', label: 'Short-forms' },
   { id: 'promotional', label: 'Promotional Events' },
-  { id: 'corporate', label: 'Corporate Events' },
   { id: 'advertisements', label: 'Advertisements' },
 ]
 

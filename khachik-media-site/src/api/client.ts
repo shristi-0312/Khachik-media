@@ -37,14 +37,10 @@ export function apiConfigured() {
 }
 
 function normalizeCategory(value: string): Category {
-  if (
-    value === 'promotional' ||
-    value === 'corporate' ||
-    value === 'advertisements' ||
-    value === 'short-forms'
-  ) {
+  if (value === 'promotional' || value === 'advertisements' || value === 'short-forms') {
     return value
   }
+  // Legacy "corporate" (and anything else) maps to promotional
   return 'promotional'
 }
 
@@ -89,7 +85,6 @@ export async function fetchProject(slug: string): Promise<Project | null> {
 export type MediaSectionId =
   | 'films_short_forms'
   | 'films_promotional'
-  | 'films_corporate'
   | 'films_advertisements'
   | 'stills'
   | 'globe_horizontal'
@@ -109,7 +104,6 @@ export type ApiMediaItem = {
 const FILMS_SECTION_TO_CATEGORY: Record<string, Category> = {
   films_short_forms: 'short-forms',
   films_promotional: 'promotional',
-  films_corporate: 'corporate',
   films_advertisements: 'advertisements',
 }
 

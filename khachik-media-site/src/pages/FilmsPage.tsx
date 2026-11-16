@@ -14,14 +14,10 @@ import styles from './FilmsPage.module.css'
 
 const SECTION_BY_CATEGORY: Record<
   Category,
-  | 'films_short_forms'
-  | 'films_promotional'
-  | 'films_corporate'
-  | 'films_advertisements'
+  'films_short_forms' | 'films_promotional' | 'films_advertisements'
 > = {
   'short-forms': 'films_short_forms',
   promotional: 'films_promotional',
-  corporate: 'films_corporate',
   advertisements: 'films_advertisements',
 }
 

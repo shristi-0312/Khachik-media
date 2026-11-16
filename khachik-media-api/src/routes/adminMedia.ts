@@ -1,9 +1,9 @@
 import type { MediaSection } from '@prisma/client'
-import { Router } from 'express'
+import express, { Router } from 'express'
 import { requireAuth } from '../auth.js'
 import { prisma } from '../db.js'
-import { isMediaSection } from '../mediaSections.js'
-import { createMediaPresignedUpload } from '../s3.js'
+import { isMediaSection, type MediaSectionId } from '../mediaSections.js'
+import { createMediaPresignedUpload, putMediaObject } from '../s3.js'
 import { serializeMedia } from '../serializeMedia.js'
 import { mediaBodySchema, mediaPatchSchema, mediaPresignSchema } from '../validation.js'
 
@@ -111,3 +111,49 @@ adminMediaRouter.post('/uploads/presign-media', async (req, res) => {
     })
   }
 })
+
+/**
+ * Browser → API → S3. Avoids browser↔S3 CORS entirely.
+ * Send the raw file body; pass section/filename via query or headers.
+ */
+adminMediaRouter.post(
+  '/uploads/media-file',
+  express.raw({ type: '*/*', limit: '2048mb' }),
+  async (req, res) => {
+    const sectionRaw =
+      (typeof req.query.section === 'string' && req.query.section) ||
+      (typeof req.headers['x-media-section'] === 'string' ? req.headers['x-media-section'] : '')
+    const filename =
+      (typeof req.query.filename === 'string' && req.query.filename) ||
+      (typeof req.headers['x-filename'] === 'string' ? req.headers['x-filename'] : undefined)
+    const contentType =
+      (typeof req.headers['content-type'] === 'string' && req.headers['content-type']) ||
+      'application/octet-stream'
+
+    if (!sectionRaw || !isMediaSection(sectionRaw)) {
+      res.status(400).json({ error: 'Invalid section' })
+      return
+    }
+
+    const body = req.body
+    if (!body || !(body instanceof Buffer) || body.length === 0) {
+      res.status(400).json({ error: 'Empty upload body' })
+      return
+    }
+
+    try {
+      const result = await putMediaObject({
+        section: sectionRaw as MediaSectionId,
+        contentType,
+        filename,
+        body,
+      })
+      res.json(result)
+    } catch (err) {
+      console.error('media proxy upload failed', err)
+      res.status(500).json({
+        error: 'Failed to upload to S3. Check IAM credentials and S3_BUCKET on the API host.',
+      })
+    }
+  },
+)

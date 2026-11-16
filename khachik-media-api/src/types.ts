@@ -54,14 +54,15 @@ export const SLOT_DB_MAP: Record<string, GallerySlot> = {
 
 export const CATEGORY_API_MAP: Record<Category, string> = {
   promotional: 'promotional',
-  corporate: 'corporate',
+  // Retired Films tab — still in Postgres enum; expose as promotional
+  corporate: 'promotional',
   advertisements: 'advertisements',
   short_forms: 'short-forms',
 }
 
 export const CATEGORY_DB_MAP: Record<string, Category> = {
   promotional: 'promotional',
-  corporate: 'corporate',
   advertisements: 'advertisements',
   'short-forms': 'short_forms',
+  corporate: 'promotional',
 }
