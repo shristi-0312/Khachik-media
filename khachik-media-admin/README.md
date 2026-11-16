@@ -1,24 +1,21 @@
 # Khachik Media Admin
 
-Functional admin panel for managing projects and media slots. No public-site design work.
+Media library for Films, Stills, and Globe HQ clips. Uploads go browser → S3 (original bytes) → CloudFront.
 
 ## Develop
 
 ```bash
 cp .env.example .env
+# VITE_API_URL=http://localhost:4000
 npm install
 npm run dev
 ```
 
 Runs at `http://localhost:5174/admin/`.
 
-By default `VITE_DEMO_MODE=true`, so you can sign in with **any password** and browse the dashboard with sample projects — no API or Postgres needed.
-
-To talk to a real API instead:
-
-1. Set `VITE_DEMO_MODE=false` in `.env`
-2. Run the API on `VITE_API_URL` (default `http://localhost:4000`)
-3. Use the seeded `ADMIN_EMAIL` / `ADMIN_PASSWORD` (defaults: `admin@khachikmedia.com` / `change-me`)
+1. Start Postgres + API (`khachik-media-api`)
+2. Sign in with `ADMIN_EMAIL` / `ADMIN_PASSWORD` (defaults: `admin@khachikmedia.com` / `change-me`)
+3. Upload into **Films**, **Stills**, or **Globe**
 
 ## Build
 

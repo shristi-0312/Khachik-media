@@ -13,3 +13,6 @@ npm-debug.log*
 .env
 .env.*
 !.env.example
+.venv-media/
+__pycache__/
+*.pyc

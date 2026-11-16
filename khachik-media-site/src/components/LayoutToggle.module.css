@@ -25,14 +25,32 @@
   justify-content: center;
   gap: 5px;
   height: 19px;
+  width: 25px;
 }
 
 .bar {
   width: 1px;
   background: var(--color-bar-idle);
   display: block;
+  transform-origin: bottom center;
+  transition:
+    background-color 320ms cubic-bezier(0.45, 0, 0.55, 1),
+    transform 320ms cubic-bezier(0.45, 0, 0.55, 1);
 }
 
 .on {
   background: var(--color-bar-active);
+  animation: barPulse 420ms cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+@keyframes barPulse {
+  0% {
+    transform: scaleY(1);
+  }
+  45% {
+    transform: scaleY(1.35);
+  }
+  100% {
+    transform: scaleY(1);
+  }
 }

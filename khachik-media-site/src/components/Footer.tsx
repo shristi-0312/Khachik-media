@@ -11,11 +11,6 @@ export function Footer() {
 
   function onContact(e: MouseEvent) {
     e.preventDefault()
-    const form = document.getElementById('contact-strip')
-    if (form) {
-      form.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      return
-    }
     openContact()
   }
 

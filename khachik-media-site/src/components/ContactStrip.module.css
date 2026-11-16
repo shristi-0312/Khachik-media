@@ -54,6 +54,10 @@
   color: rgba(0, 0, 0, 0.5);
 }
 
+/*
+ * Figma Button Default → Hover (ON_HOVER, Smart Animate Gentle ~767ms).
+ * Gap 10 → 20 spreads the chevrons outward while the label stays centered.
+ */
 .submit {
   flex: none;
   width: 368px;
@@ -70,6 +74,13 @@
   color: var(--color-white);
   text-transform: uppercase;
   white-space: nowrap;
+  transition: gap 767ms cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+.submit:hover,
+.submit:focus-visible,
+.submit:active {
+  gap: 20px;
 }
 
 .submit img {

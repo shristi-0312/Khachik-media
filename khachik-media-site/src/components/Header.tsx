@@ -13,11 +13,7 @@ export function Header({ variant = 'glass', active = null }: Props) {
   const base = useBasePath()
 
   function onCta() {
-    const form = document.getElementById('contact-strip')
-    if (form) {
-      form.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      return
-    }
+    // Same Start a Project flow — Hindi CTA is just the quote-effect label.
     openContact()
   }
 

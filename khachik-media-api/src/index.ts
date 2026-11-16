@@ -3,7 +3,9 @@ import cors from 'cors'
 import express from 'express'
 import { config } from './config.js'
 import { adminRouter } from './routes/admin.js'
+import { adminMediaRouter } from './routes/adminMedia.js'
 import { authRouter } from './routes/auth.js'
+import { publicMediaRouter } from './routes/media.js'
 import { publicProjectsRouter } from './routes/projects.js'
 
 const app = express()
@@ -30,6 +32,8 @@ app.get('/health', (_req, res) => {
 
 app.use('/auth', authRouter)
 app.use('/projects', publicProjectsRouter)
+app.use('/media', publicMediaRouter)
+app.use('/admin', adminMediaRouter)
 app.use('/admin', adminRouter)
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

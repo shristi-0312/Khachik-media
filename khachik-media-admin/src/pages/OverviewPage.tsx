@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
-import { isLoggedIn, listProjects, type Project } from '../api'
-import { CATEGORIES } from '../types'
+import { isLoggedIn, listMedia, type MediaItem } from '../api'
+import { ALL_SECTIONS, sectionLabel } from '../types'
 
 export function OverviewPage() {
   const loggedIn = isLoggedIn()
-  const [projects, setProjects] = useState<Project[]>([])
+  const [items, setItems] = useState<MediaItem[]>([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
@@ -16,10 +16,10 @@ export function OverviewPage() {
       setLoading(true)
       setError('')
       try {
-        const data = await listProjects()
-        if (!cancelled) setProjects(data)
+        const data = await listMedia()
+        if (!cancelled) setItems(data)
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load projects')
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load media')
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -30,32 +30,28 @@ export function OverviewPage() {
   }, [loggedIn])
 
   const stats = useMemo(() => {
-    const published = projects.filter((p) => p.published).length
-    const drafts = projects.length - published
-    const byCategory = CATEGORIES.map((cat) => ({
-      ...cat,
-      count: projects.filter((p) => p.category === cat.id).length,
+    const published = items.filter((i) => i.published).length
+    const bySection = ALL_SECTIONS.map((s) => ({
+      ...s,
+      count: items.filter((i) => i.section === s.id).length,
     }))
-    const recent = [...projects]
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-      .slice(0, 5)
-    return { published, drafts, byCategory, recent }
-  }, [projects])
+    return { published, drafts: items.length - published, bySection }
+  }, [items])
 
   if (!loggedIn) return <Navigate to="/login" replace />
 
   return (
     <div className="stack loose">
       {error ? <p className="error">{error}</p> : null}
-      {loading ? <p className="loading-block">Loading studio pulse…</p> : null}
+      {loading ? <p className="loading-block">Loading library…</p> : null}
 
       {!loading ? (
         <>
           <div className="grid4">
             <article className="stat-card">
-              <p className="stat-label">Total projects</p>
-              <p className="stat-value">{projects.length}</p>
-              <p className="stat-meta">In the catalogue</p>
+              <p className="stat-label">Total assets</p>
+              <p className="stat-value">{items.length}</p>
+              <p className="stat-meta">In the media library</p>
             </article>
             <article className="stat-card">
               <p className="stat-label">Published</p>
@@ -63,14 +59,14 @@ export function OverviewPage() {
               <p className="stat-meta">Live on the site</p>
             </article>
             <article className="stat-card">
-              <p className="stat-label">Drafts</p>
+              <p className="stat-label">Hidden</p>
               <p className="stat-value">{stats.drafts}</p>
-              <p className="stat-meta">Waiting to go live</p>
+              <p className="stat-meta">Not shown publicly</p>
             </article>
             <article className="stat-card">
-              <p className="stat-label">Categories</p>
-              <p className="stat-value">{CATEGORIES.length}</p>
-              <p className="stat-meta">Active lanes</p>
+              <p className="stat-label">Sections</p>
+              <p className="stat-value">{ALL_SECTIONS.length}</p>
+              <p className="stat-meta">Films · Stills · Globe</p>
             </article>
           </div>
 
@@ -78,55 +74,79 @@ export function OverviewPage() {
             <section className="panel">
               <div className="section-head">
                 <div>
-                  <h2>By category</h2>
-                  <p>Distribution across the four lanes</p>
+                  <p className="eyebrow">Library</p>
+                  <h2>By section</h2>
                 </div>
               </div>
               <div className="category-bars">
-                {stats.byCategory.map((cat) => {
-                  const pct = projects.length ? Math.round((cat.count / projects.length) * 100) : 0
-                  return (
-                    <div className="category-row" key={cat.id}>
-                      <span>{cat.label}</span>
-                      <div className="bar-track">
-                        <div className="bar-fill" style={{ width: `${pct}%` }} />
-                      </div>
-                      <strong>{cat.count}</strong>
-                    </div>
-                  )
-                })}
+                {stats.bySection.map((s) => (
+                  <div className="category-row" key={s.id}>
+                    <span>{s.label}</span>
+                    <strong>{s.count}</strong>
+                  </div>
+                ))}
               </div>
             </section>
 
             <section className="panel">
               <div className="section-head">
                 <div>
-                  <h2>Top of order</h2>
-                  <p>First five by sort position</p>
+                  <p className="eyebrow">Upload</p>
+                  <h2>Where to go</h2>
                 </div>
-                <Link className="button secondary sm" to="/projects">
-                  View all
+              </div>
+              <div className="stack">
+                <Link className="button secondary" to="/films">
+                  Films — Short-forms, Promotional, Ads
+                </Link>
+                <Link className="button secondary" to="/stills">
+                  Stills — photography grid
+                </Link>
+                <Link className="button secondary" to="/globe">
+                  Globe — HQ horizontal & vertical clips
                 </Link>
               </div>
-              <div className="recent-list">
-                {stats.recent.length === 0 ? (
-                  <p className="empty">No projects yet.</p>
-                ) : (
-                  stats.recent.map((project) => (
-                    <Link className="recent-item" key={project.id} to={`/projects/${project.id}`}>
-                      <div>
-                        <div className="project-title">{project.title}</div>
-                        <div className="project-slug">{project.slug}</div>
-                      </div>
-                      <span className={`badge ${project.published ? 'live' : 'draft'}`}>
-                        {project.published ? 'Live' : 'Draft'}
-                      </span>
-                    </Link>
-                  ))
-                )}
-              </div>
+              <p className="hint" style={{ marginTop: 16 }}>
+                Files upload as originals to S3 and serve via CloudFront — no recompression.
+              </p>
             </section>
           </div>
+
+          {items.slice(0, 6).length ? (
+            <section className="panel">
+              <div className="section-head">
+                <div>
+                  <p className="eyebrow">Recent</p>
+                  <h2>Latest uploads</h2>
+                </div>
+              </div>
+              <div className="table-wrap">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Title</th>
+                      <th>Section</th>
+                      <th>Type</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...items]
+                      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+                      .slice(0, 6)
+                      .map((item) => (
+                        <tr key={item.id}>
+                          <td>{item.title || 'Untitled'}</td>
+                          <td>{sectionLabel(item.section)}</td>
+                          <td>{item.mediaType}</td>
+                          <td>{item.published ? 'Live' : 'Hidden'}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          ) : null}
         </>
       ) : null}
     </div>

@@ -5,23 +5,33 @@
 
 .hero {
   position: relative;
-  height: 900px;
+  height: calc(100dvh / var(--artboard-scale, 1));
   background: var(--color-red);
   overflow: hidden;
 }
 
 .wordmark {
   position: absolute;
-  left: 551px;
+  left: 50%;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+.heroCopy {
+  position: absolute;
+  left: 50%;
+  bottom: calc(48px / var(--artboard-scale, 1));
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(12px / var(--artboard-scale, 1));
+  width: min(420px, 90%);
 }
 
 .kicker {
-  position: absolute;
-  left: 50%;
-  top: 765px;
-  transform: translateX(-50%);
   margin: 0;
   font-family: var(--font-mono);
   font-weight: 700;
@@ -33,12 +43,8 @@
 }
 
 .tagline {
-  position: absolute;
-  left: 50%;
-  top: 815px;
-  transform: translateX(-50%);
   margin: 0;
-  width: 297px;
+  max-width: 297px;
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: -0.7px;

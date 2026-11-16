@@ -70,3 +70,28 @@ model GalleryItem {
 
   @@unique([projectId, slot])
 }
+
+/** Site media library — Films / Stills / Globe HQ (original files via CloudFront). */
+enum MediaSection {
+  films_short_forms
+  films_promotional
+  films_advertisements
+  stills
+  globe_horizontal
+  globe_vertical
+}
+
+model MediaItem {
+  id        String       @id @default(cuid())
+  section   MediaSection
+  title     String       @default("")
+  dateLabel String       @default("")
+  mediaType MediaType
+  url       String
+  published Boolean      @default(true)
+  sortOrder Int          @default(0)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([section, sortOrder])
+}

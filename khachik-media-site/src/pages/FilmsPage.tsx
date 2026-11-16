@@ -1,37 +1,99 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { apiConfigured, fetchMedia, mediaToProject } from '../api/client'
 import { Artboard } from '../components/Artboard'
 import { ContactStrip } from '../components/ContactStrip'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
 import { LayoutToggle } from '../components/LayoutToggle'
 import { ProjectCard } from '../components/ProjectCard'
+import { VideoOverlay } from '../components/VideoOverlay'
 import { Wordmark } from '../components/Wordmark'
 import { useProjects } from '../context/ProjectsContext'
-import { CATEGORIES, type Category } from '../data/content'
+import { CATEGORIES, type Category, type Project } from '../data/content'
 import styles from './FilmsPage.module.css'
 
-type Layout = 'horizontal' | 'vertical'
+const SECTION_BY_CATEGORY: Record<
+  Category,
+  | 'films_short_forms'
+  | 'films_promotional'
+  | 'films_corporate'
+  | 'films_advertisements'
+> = {
+  'short-forms': 'films_short_forms',
+  promotional: 'films_promotional',
+  corporate: 'films_corporate',
+  advertisements: 'films_advertisements',
+}
+
+type LayoutMode = 'horizontal' | 'vertical'
+
+type ActiveVideo = {
+  project: Project
+  videoUrl: string
+}
+
+function resolveVideoUrl(project: Project, index: number): string {
+  const hero = project.heroUrl
+  if (hero && (project.heroType === 'video' || /\.(mp4|webm|mov)(\?|$)/i.test(hero))) {
+    return hero
+  }
+  const cover = project.coverUrl
+  if (cover && (project.coverType === 'video' || /\.(mp4|webm|mov)(\?|$)/i.test(cover))) {
+    return cover
+  }
+  return `/media/small/reel-${(index % 14) + 1}.mp4`
+}
 
 export function FilmsPage() {
-  const { projects } = useProjects()
+  const { projects: fallbackProjects } = useProjects()
   const [category, setCategory] = useState<Category>('short-forms')
-  const [layout, setLayout] = useState<Layout>('vertical')
+  /** 0 = horizontal (118:3131), 1 = vertical (118:3274) */
+  const [layoutIndex, setLayoutIndex] = useState(0)
+  const [library, setLibrary] = useState<Project[] | null>(null)
+  const [active, setActive] = useState<ActiveVideo | null>(null)
 
-  /** Figma: 4 sections → 8 horizontal (2×4) or 12 vertical (3×4). */
+  const layout: LayoutMode = layoutIndex === 0 ? 'horizontal' : 'vertical'
+
+  useEffect(() => {
+    if (!apiConfigured()) {
+      setLibrary(null)
+      return
+    }
+    let cancelled = false
+    void (async () => {
+      try {
+        const section = SECTION_BY_CATEGORY[category]
+        const items = await fetchMedia(section)
+        if (cancelled) return
+        setLibrary(items.map(mediaToProject))
+      } catch {
+        if (!cancelled) setLibrary(null)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [category])
+
   const items = useMemo(() => {
-    const filtered = projects.filter((p) => p.category === category)
-    const source = filtered.length ? filtered : projects
+    const source =
+      library && library.length
+        ? library
+        : fallbackProjects.filter((p) => p.category === category)
     if (!source.length) return []
-    const count = layout === 'vertical' ? 12 : 8
-    const out = []
-    for (let i = 0; i < count; i += 1) out.push(source[i % source.length])
+    // Prefer real library length; pad for local fallback demos.
+    if (library && library.length) return source
+    const target = layout === 'vertical' ? 12 : 8
+    const out: Project[] = []
+    for (let i = 0; i < target; i += 1) out.push(source[i % source.length]!)
     return out
-  }, [category, projects, layout])
+  }, [library, fallbackProjects, category, layout])
 
-  function onCategory(next: Category) {
-    setCategory(next)
-    // Short-forms use tall vertical cards; event categories use landscape.
-    setLayout(next === 'short-forms' ? 'vertical' : 'horizontal')
+  function onOpen(project: Project, index: number) {
+    setActive({
+      project,
+      videoUrl: resolveVideoUrl(project, index),
+    })
   }
 
   return (
@@ -40,10 +102,12 @@ export function FilmsPage() {
         <Header active="films" />
         <section className={styles.hero}>
           <Wordmark className={styles.wordmark} />
-          <p className={styles.kicker}>Work</p>
-          <p className={styles.tagline}>
-            our curated work done for the market giants and major brands.
-          </p>
+          <div className={styles.heroCopy}>
+            <p className={styles.kicker}>Work</p>
+            <p className={styles.tagline}>
+              our curated work done for the market giants and major brands.
+            </p>
+          </div>
         </section>
 
         <div className={styles.filters}>
@@ -52,7 +116,7 @@ export function FilmsPage() {
               key={c.id}
               type="button"
               className={`${styles.filter} ${category === c.id ? styles.filterActive : ''}`}
-              onClick={() => onCategory(c.id)}
+              onClick={() => setCategory(c.id)}
             >
               {c.label}
             </button>
@@ -65,16 +129,17 @@ export function FilmsPage() {
         >
           {items.map((project, i) => (
             <ProjectCard
-              key={`${layout}-${project.slug}-${i}`}
+              key={`${project.slug}-${layout}-${i}`}
               project={project}
               layout={layout}
               frameHover
+              onOpen={() => onOpen(project, i)}
             />
           ))}
         </section>
 
-        <div className={styles.toggleWrap}>
-          <LayoutToggle layout={layout} onChange={setLayout} />
+        <div className={styles.pager}>
+          <LayoutToggle index={layoutIndex} count={2} onChange={setLayoutIndex} />
         </div>
 
         <section className={styles.contactSection}>
@@ -83,6 +148,15 @@ export function FilmsPage() {
 
         <Footer />
       </div>
+
+      {active ? (
+        <VideoOverlay
+          project={active.project}
+          videoUrl={active.videoUrl}
+          layout={layout}
+          onClose={() => setActive(null)}
+        />
+      ) : null}
     </Artboard>
   )
 }

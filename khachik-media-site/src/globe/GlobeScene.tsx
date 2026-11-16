@@ -2,10 +2,11 @@ import { useEffect, useMemo, useRef, type MutableRefObject } from 'react'
 import * as THREE from 'three'
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { GLOBE, R } from './config'
+import { latticeGeometry, surfaceToSphere, tileGeometry } from './geometry'
 import type { Layout, TileSlot } from './layout'
-import type { Atlas } from './atlas'
-import { latticeGeometry, tileGeometry } from './geometry'
+import { PROJECTS, type Project as GlobeProject } from './projects'
 import { latticeFragment, latticeVertex, tileFragment, tileVertex } from './shaders'
+import type { VideoPool } from './videoPool'
 
 export interface Readout {
   /** Longitude (deg) at the left and right edges of the viewport. */
@@ -15,7 +16,9 @@ export interface Readout {
 
 export interface GlobeSceneProps {
   layout: Layout
-  atlas: Atlas
+  videos: VideoPool
+  /** HQ clip sources — defaults to local stock if omitted. */
+  projects?: GlobeProject[]
   hoveredCluster: number | null
   onHover: (clusterIndex: number | null, clientX: number, clientY: number) => void
   onSelect: (clusterIndex: number) => void
@@ -28,6 +31,16 @@ export interface GlobeSceneProps {
    */
   allowPageScroll?: boolean
 }
+
+const FULL_UV = { x0: 0, x1: 1, vTop: 1, vBottom: 0 }
+
+const PLACEHOLDER_TEX = (() => {
+  const data = new Uint8Array([24, 22, 22, 255])
+  const t = new THREE.DataTexture(data, 1, 1)
+  t.colorSpace = THREE.SRGBColorSpace
+  t.needsUpdate = true
+  return t
+})()
 
 interface SpinState {
   lon: number
@@ -45,7 +58,8 @@ interface SpinState {
 
 export function GlobeScene({
   layout,
-  atlas,
+  videos,
+  projects = PROJECTS,
   hoveredCluster,
   onHover,
   onSelect,
@@ -54,6 +68,7 @@ export function GlobeScene({
   allowPageScroll = false,
 }: GlobeSceneProps) {
   const group = useRef<THREE.Group>(null)
+  const latticeMatRef = useRef<THREE.ShaderMaterial | null>(null)
   const { gl, camera, size } = useThree()
 
   const spin = useRef<SpinState>({
@@ -74,6 +89,16 @@ export function GlobeScene({
   const pageScrollRef = useRef(allowPageScroll)
   pageScrollRef.current = allowPageScroll
 
+  /** Raw pointer on the sphere (target) + smoothed uniforms for the lattice glow. */
+  const hover = useRef({
+    tLat: 0,
+    tLon: 0,
+    tOn: 0,
+    lat: 0,
+    lon: 0,
+    on: 0,
+  })
+
   /* ---------------------------------- input --------------------------------- */
   useEffect(() => {
     const el = gl.domElement
@@ -82,7 +107,6 @@ export function GlobeScene({
     const onWheel = (e: WheelEvent) => {
       if (frozenRef.current) return
 
-      // Home embed: let vertical wheel scroll the page; only horizontal spins.
       if (pageScrollRef.current) {
         if (Math.abs(e.deltaY) >= Math.abs(e.deltaX)) return
         e.preventDefault()
@@ -116,8 +140,6 @@ export function GlobeScene({
       s.lastX = e.clientX
       s.lastY = e.clientY
       s.tLon += dx * GLOBE.dragSens
-      // On the home page, ignore vertical drag-pan so a slight drag while
-      // scrolling doesn't fight the page.
       if (!pageScrollRef.current) {
         s.tPan = THREE.MathUtils.clamp(
           s.tPan + (dy * GLOBE.panDragSens) / s.scale,
@@ -151,7 +173,7 @@ export function GlobeScene({
 
   /* ---------------------------------- frame --------------------------------- */
   useFrame((_, dtRaw) => {
-    atlas.tick()
+    videos.tick()
 
     const dt = Math.min(dtRaw, 0.05)
     const s = spin.current
@@ -163,11 +185,31 @@ export function GlobeScene({
     const screenR = Math.min(GLOBE.radiusVw * size.width, GLOBE.radiusVh * size.height)
     s.scale = THREE.MathUtils.clamp(screenR / R, GLOBE.scaleMin, GLOBE.scaleMax)
 
+    // Smooth Griflan-style cursor follow on the lattice.
+    const h = hover.current
+    const follow = GLOBE.hoverFollow
+    h.lat = THREE.MathUtils.damp(h.lat, h.tLat, follow, dt)
+    h.lon = THREE.MathUtils.damp(h.lon, h.tLon, follow, dt)
+    h.on = THREE.MathUtils.damp(h.on, h.tOn, follow, dt)
+    const mat = latticeMatRef.current
+    if (mat) {
+      mat.uniforms.uHoverLat.value = h.lat
+      mat.uniforms.uHoverLon.value = h.lon
+      mat.uniforms.uHoverOn.value = h.on
+    }
+
     if (group.current) {
       group.current.rotation.y = s.lon
       group.current.scale.setScalar(s.scale)
     }
     camera.position.y = s.pan * s.scale
+
+    // Keep cream lattice looking thicker across GPUs (lineWidth is often capped at 1).
+    try {
+      gl.getContext().lineWidth(GLOBE.latticeLineWidth)
+    } catch {
+      /* ignore */
+    }
 
     if (onReadout) {
       const half = Math.asin(Math.min(1, size.width / 2 / (R * s.scale))) * (180 / Math.PI)
@@ -178,22 +220,69 @@ export function GlobeScene({
   })
 
   /* --------------------------------- content -------------------------------- */
-  const lattice = useMemo(
-    () => ({
-      geometry: latticeGeometry(R - 0.6, GLOBE.latticeStepDeg, GLOBE.latticeLatLimitDeg),
-      material: new THREE.ShaderMaterial({
-        vertexShader: latticeVertex,
-        fragmentShader: latticeFragment,
-        uniforms: {
-          uColor: { value: new THREE.Color(GLOBE.lattice) },
-          uAlpha: { value: GLOBE.latticeAlpha },
-        },
-        transparent: true,
-        depthWrite: false,
-      }),
-    }),
-    [],
+  const lattice = useMemo(() => {
+    // Identical radius to tiles so edges meet lattice lines in screen space.
+    const geometry = latticeGeometry(R, GLOBE.latticeLatLimitDeg)
+    // ~2.6 cells of glow — matches Griflan’s tight cursor scan.
+    const falloff = (GLOBE.hoverRadiusCells * GLOBE.tileW) / R
+    const material = new THREE.ShaderMaterial({
+      vertexShader: latticeVertex,
+      fragmentShader: latticeFragment,
+      uniforms: {
+        uColor: { value: new THREE.Color(GLOBE.lattice) },
+        uHoverColor: { value: new THREE.Color(GLOBE.red) },
+        uAlpha: { value: GLOBE.latticeAlpha },
+        uHoverAlpha: { value: GLOBE.hoverLatticeAlpha },
+        uHoverLat: { value: 0 },
+        uHoverLon: { value: 0 },
+        uHoverOn: { value: 0 },
+        uFalloff: { value: falloff },
+      },
+      transparent: true,
+      depthWrite: false,
+      depthTest: true,
+      blending: THREE.NormalBlending,
+    })
+    latticeMatRef.current = material
+    return { geometry, material }
+  }, [])
+
+  useEffect(
+    () => () => {
+      lattice.geometry?.dispose()
+      lattice.material?.dispose()
+      latticeMatRef.current = null
+    },
+    [lattice],
   )
+
+  /** Drive lattice glow from sphere / tile hit points (surface lat/lon). */
+  const setLatticeHover = (lat: number, lon: number, on: boolean) => {
+    const h = hover.current
+    if (on) {
+      h.tLat = lat
+      h.tLon = lon
+      h.tOn = 1
+    } else {
+      h.tOn = 0
+    }
+  }
+
+  const onHitSphere = (e: ThreeEvent<PointerEvent>) => {
+    if (frozenRef.current) return
+    const p = e.point.clone()
+    if (group.current) group.current.worldToLocal(p)
+    const len = p.length() || 1
+    const n = p.multiplyScalar(1 / len)
+    const lat = Math.asin(THREE.MathUtils.clamp(n.y, -1, 1))
+    const lon = Math.atan2(n.x, n.z)
+    setLatticeHover(lat, lon, true)
+  }
+
+  const onLeaveSphere = () => {
+    if (frozenRef.current) return
+    setLatticeHover(0, 0, false)
+  }
 
   return (
     <group ref={group}>
@@ -203,17 +292,40 @@ export function GlobeScene({
         <meshBasicMaterial color={GLOBE.bg} />
       </mesh>
 
-      <lineSegments geometry={lattice.geometry} material={lattice.material} />
+      {/* Invisible hit sphere for lattice hover when not over a tile. */}
+      <mesh
+        onPointerMove={onHitSphere}
+        onPointerOver={onHitSphere}
+        onPointerOut={onLeaveSphere}
+      >
+        <sphereGeometry args={[R - 0.15, 64, 48]} />
+        <meshBasicMaterial
+          transparent
+          opacity={0}
+          depthWrite={false}
+          colorWrite={false}
+          side={THREE.FrontSide}
+        />
+      </mesh>
+
+      {/* Cream lattice — cursor paints nearby lines brand-red (Griflan scan). */}
+      <lineSegments
+        geometry={lattice.geometry}
+        material={lattice.material}
+        renderOrder={1}
+      />
 
       {layout.tiles.map((slot) => (
         <Tile
           key={slot.id}
           slot={slot}
-          atlas={atlas}
+          projects={projects}
+          videos={videos}
           dim={hoveredCluster !== null && hoveredCluster !== slot.clusterIndex}
           hover={hoveredCluster === slot.clusterIndex}
           onHover={onHover}
           onSelect={onSelect}
+          onLatticeHover={setLatticeHover}
           spin={spin}
           frozenRef={frozenRef}
         />
@@ -226,57 +338,103 @@ export function GlobeScene({
 
 interface TileProps {
   slot: TileSlot
-  atlas: Atlas
+  projects: GlobeProject[]
+  videos: VideoPool
   dim: boolean
   hover: boolean
   onHover: GlobeSceneProps['onHover']
   onSelect: GlobeSceneProps['onSelect']
+  onLatticeHover: (lat: number, lon: number, on: boolean) => void
   spin: MutableRefObject<SpinState>
   frozenRef: MutableRefObject<boolean>
 }
 
-function Tile({ slot, atlas, dim, hover, onHover, onSelect, spin, frozenRef }: TileProps) {
-  const geometry = useMemo(() => tileGeometry(slot, R, atlas.rect(slot.projectIndex, slot.tileIndex)), [slot, atlas])
+function Tile({
+  slot,
+  projects,
+  videos,
+  dim,
+  hover,
+  onHover,
+  onSelect,
+  onLatticeHover,
+  spin,
+  frozenRef,
+}: TileProps) {
+  const project = projects[slot.projectIndex]
+  const src = project?.videos?.[slot.tileIndex] ?? project?.videos?.[0] ?? ''
+  const phase = (slot.clusterIndex + slot.tileIndex) % 2
+
+  const geometry = useMemo(() => tileGeometry(slot, R, FULL_UV), [slot])
+
+  const texture = useMemo(() => {
+    if (!src) return PLACEHOLDER_TEX
+    return videos.textureFor(src, phase)
+  }, [videos, src, phase])
+
   const material = useMemo(
     () =>
       new THREE.ShaderMaterial({
         vertexShader: tileVertex,
         fragmentShader: tileFragment,
         uniforms: {
-          uMap: { value: atlas.texture },
+          uMap: { value: texture },
           uDim: { value: 0 },
           uHover: { value: 0 },
+          uTileAspect: { value: slot.w / slot.h },
+          uVideoAspect: { value: slot.w / slot.h },
         },
+        // Prefer tiles over co-radial lattice so cream lines show only in gaps.
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+        polygonOffsetUnits: -2,
+        depthWrite: true,
       }),
-    [atlas],
+    [texture, slot.w, slot.h],
   )
 
   useEffect(() => () => geometry.dispose(), [geometry])
   useEffect(() => () => material.dispose(), [material])
 
-  // Ease the dim/hover uniforms so highlight changes are not a hard cut.
   useFrame((_, dt) => {
     const u = material.uniforms
     u.uDim.value = THREE.MathUtils.damp(u.uDim.value, dim ? 1 : 0, 10, dt)
     u.uHover.value = THREE.MathUtils.damp(u.uHover.value, hover ? 1 : 0, 10, dt)
+    if (src) u.uVideoAspect.value = videos.aspectFor(src, phase)
   })
+
+  const syncLattice = (e: ThreeEvent<PointerEvent>) => {
+    const p = e.point.clone()
+    // Point is in world space; tile is under the spinning group — use local via surface of slot centre as fallback.
+    const centre = surfaceToSphere(slot.u, slot.v, R)
+    // Prefer event local point if available
+    const local = e.object.worldToLocal(e.point.clone())
+    const n = local.lengthSq() > 0.01 ? local.normalize() : centre.normalize()
+    const lat = Math.asin(THREE.MathUtils.clamp(n.y, -1, 1))
+    const lon = Math.atan2(n.x, n.z)
+    onLatticeHover(lat, lon, true)
+    void p
+  }
 
   const over = (e: ThreeEvent<PointerEvent>) => {
     if (frozenRef.current) return
     e.stopPropagation()
     onHover(slot.clusterIndex, e.clientX, e.clientY)
+    syncLattice(e)
   }
   const move = (e: ThreeEvent<PointerEvent>) => {
     if (frozenRef.current) return
+    e.stopPropagation()
     onHover(slot.clusterIndex, e.clientX, e.clientY)
+    syncLattice(e)
   }
   const out = (e: ThreeEvent<PointerEvent>) => {
     if (frozenRef.current) return
     onHover(null, e.clientX, e.clientY)
+    onLatticeHover(0, 0, false)
   }
   const click = (e: ThreeEvent<MouseEvent>) => {
     if (frozenRef.current) return
-    // Ignore "clicks" that were really a drag.
     if (e.delta > 6 || spin.current.dragging) return
     e.stopPropagation()
     onSelect(slot.clusterIndex)
@@ -286,6 +444,7 @@ function Tile({ slot, atlas, dim, hover, onHover, onSelect, spin, frozenRef }: T
     <mesh
       geometry={geometry}
       material={material}
+      renderOrder={2}
       onPointerOver={over}
       onPointerMove={move}
       onPointerOut={out}

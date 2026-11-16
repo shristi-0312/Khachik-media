@@ -3,6 +3,8 @@
   width: 1470px;
   height: 5738px;
   background: var(--color-page);
+  /* Figma bleeds tiles past the right edge (x=1443) */
+  overflow: visible;
 }
 
 .intro {

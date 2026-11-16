@@ -4,7 +4,8 @@
   height: 200px;
   background: rgba(0, 0, 0, 0.02);
   border: 1px solid rgba(0, 0, 0, 0.08);
-  overflow: hidden;
+  /* Viewport clips the marquee; frame stays visible for corner brackets */
+  overflow: visible;
 }
 
 .viewport {

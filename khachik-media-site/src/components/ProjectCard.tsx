@@ -11,22 +11,23 @@ type Props = {
   showPlay?: boolean
   /** Figma Video Frame / Vertical hover — corner reveal + inset */
   frameHover?: boolean
+  /** Films grid: open overlay instead of navigating to project detail */
+  onOpen?: (project: Project) => void
 }
 
-export function ProjectCard({
+function CardBody({
   project,
-  layout,
-  tone = 'gray',
-  showPlay = false,
-  frameHover = false,
-}: Props) {
-  const base = useBasePath()
-
+  tone,
+  showPlay,
+  frameHover,
+}: {
+  project: Project
+  tone: 'gray' | 'red'
+  showPlay: boolean
+  frameHover: boolean
+}) {
   return (
-    <Link
-      to={`${base}/projects/${project.slug}`}
-      className={`${styles.card} ${layout === 'vertical' ? styles.vertical : styles.horizontal} ${frameHover ? styles.frameHover : ''}`}
-    >
+    <>
       <div
         className={`${styles.media} ${tone === 'red' ? styles.red : styles.gray}`}
       >
@@ -67,6 +68,46 @@ export function ProjectCard({
         <span className={styles.title}>{project.title}</span>
         <span className={styles.date}>{project.date}</span>
       </div>
+    </>
+  )
+}
+
+export function ProjectCard({
+  project,
+  layout,
+  tone = 'gray',
+  showPlay = false,
+  frameHover = false,
+  onOpen,
+}: Props) {
+  const base = useBasePath()
+  const className = `${styles.card} ${layout === 'vertical' ? styles.vertical : styles.horizontal} ${frameHover ? styles.frameHover : ''}`
+
+  if (onOpen) {
+    return (
+      <button
+        type="button"
+        className={className}
+        onClick={() => onOpen(project)}
+      >
+        <CardBody
+          project={project}
+          tone={tone}
+          showPlay={showPlay}
+          frameHover={frameHover}
+        />
+      </button>
+    )
+  }
+
+  return (
+    <Link to={`${base}/projects/${project.slug}`} className={className}>
+      <CardBody
+        project={project}
+        tone={tone}
+        showPlay={showPlay}
+        frameHover={frameHover}
+      />
     </Link>
   )
 }

@@ -31,6 +31,18 @@ export function apiConfigured() {
   return Boolean(API_URL)
 }
 
+function normalizeCategory(value: string): Category {
+  if (
+    value === 'promotional' ||
+    value === 'corporate' ||
+    value === 'advertisements' ||
+    value === 'short-forms'
+  ) {
+    return value
+  }
+  return 'promotional'
+}
+
 export function mapApiProject(p: ApiProject): Project {
   return {
     slug: p.slug,
@@ -39,7 +51,7 @@ export function mapApiProject(p: ApiProject): Project {
     year: p.year,
     client: p.client,
     service: p.service,
-    category: p.category as Category,
+    category: normalizeCategory(p.category),
     description: p.description,
     coverUrl: p.coverUrl,
     coverType: p.coverType,
@@ -67,6 +79,60 @@ export async function fetchProject(slug: string): Promise<Project | null> {
   if (res.status === 404) return null
   if (!res.ok) throw new Error(`Failed to load project (${res.status})`)
   return mapApiProject((await res.json()) as ApiProject)
+}
+
+export type MediaSectionId =
+  | 'films_short_forms'
+  | 'films_promotional'
+  | 'films_corporate'
+  | 'films_advertisements'
+  | 'stills'
+  | 'globe_horizontal'
+  | 'globe_vertical'
+
+export type ApiMediaItem = {
+  id: string
+  section: MediaSectionId
+  title: string
+  dateLabel: string
+  mediaType: 'image' | 'video'
+  url: string
+  published: boolean
+  sortOrder: number
+}
+
+const FILMS_SECTION_TO_CATEGORY: Record<string, Category> = {
+  films_short_forms: 'short-forms',
+  films_promotional: 'promotional',
+  films_corporate: 'corporate',
+  films_advertisements: 'advertisements',
+}
+
+/** Map library media into the Project shape used by Films cards / overlay. */
+export function mediaToProject(item: ApiMediaItem): Project {
+  const category = FILMS_SECTION_TO_CATEGORY[item.section] ?? 'promotional'
+  return {
+    slug: item.id,
+    title: item.title || 'Untitled',
+    date: item.dateLabel || '',
+    year: '',
+    client: '',
+    service: '',
+    category,
+    description: [],
+    coverUrl: item.url,
+    coverType: item.mediaType,
+    heroUrl: item.url,
+    heroType: item.mediaType,
+  }
+}
+
+export async function fetchMedia(section?: MediaSectionId): Promise<ApiMediaItem[]> {
+  if (!API_URL) return []
+  const q = section ? `?section=${encodeURIComponent(section)}` : ''
+  const res = await fetch(`${API_URL}/media${q}`)
+  if (!res.ok) throw new Error(`Failed to load media (${res.status})`)
+  return (await res.json()) as ApiMediaItem[]
 }
 
 export { API_URL }

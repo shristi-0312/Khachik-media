@@ -1,6 +1,6 @@
 <svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="8" height="8" viewBox="0 0 8 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g id="Frame 9">
-<line id="Line 1" x1="0.5" x2="0.5" y2="8" stroke="white"/>
-<line id="Line 2" y1="0.5" x2="8" y2="0.5" stroke="white"/>
+<g id="Corner Top Right">
+<line id="Line 1" x1="0.5" x2="0.5" y2="8" stroke="black"/>
+<line id="Line 2" y1="0.5" x2="8" y2="0.5" stroke="black"/>
 </g>
 </svg>

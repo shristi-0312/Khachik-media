@@ -20,26 +20,33 @@ export function AboutPage() {
       <div className={styles.page}>
         <Header active="about" />
 
+        {/* Figma Hero 118:3443 — 1470×900 */}
         <section className={styles.hero}>
           <Wordmark className={styles.wordmark} />
-          <p className={styles.kicker}>About us</p>
-          <p className={styles.tagline}>
-            i think i have a knack of finding good people working with me
-          </p>
+          <div className={styles.heroCopy}>
+            <p className={styles.kicker}>About us</p>
+            <p className={styles.tagline}>
+              i think i have a knack of finding good people working with me
+            </p>
+          </div>
         </section>
 
-        <p className={styles.label} style={{ top: 1068 }}>
-          About Khachik Media
-        </p>
-        <h2 className={styles.headline} style={{ top: 1100 }}>
-          We are all about humane content &amp; holding attention
+        {/* About band — label 1068, headline 1100, body 1150 */}
+        <p className={`${styles.label} ${styles.labelAbout}`}>About Khachik Media</p>
+        <h2 className={`${styles.headline} ${styles.headlineAbout}`}>
+          We are all about
+          <br />
+          humane content &amp;
+          <br />
+          holding attention
         </h2>
-        <div className={styles.body} style={{ top: 1150 }}>
+        <div className={`${styles.body} ${styles.bodyAbout}`}>
           {ABOUT_BODY.map((p) => (
             <p key={p.slice(0, 24)}>{p}</p>
           ))}
         </div>
 
+        {/* Media grid — 3×2 red tiles starting y=1652 */}
         <section className={styles.mediaGrid} aria-label="Featured media">
           <div className={styles.row}>
             <div className={styles.mediaRed}>
@@ -63,13 +70,18 @@ export function AboutPage() {
           </div>
         </section>
 
-        <p className={styles.label} style={{ top: 3026 }}>
-          We really love
-        </p>
-        <h2 className={styles.headline} style={{ top: 3058 }}>
-          People with high energy who really wants to stand out
+        {/* Second copy band — label 3026, headline 3058, body 3108 */}
+        <p className={`${styles.label} ${styles.labelLove}`}>We really love</p>
+        <h2 className={`${styles.headline} ${styles.headlineLove}`}>
+          People with high
+          <br />
+          energy who really
+          <br />
+          wants to stand
+          <br />
+          out
         </h2>
-        <div className={styles.body} style={{ top: 3108 }}>
+        <div className={`${styles.body} ${styles.bodyLove}`}>
           {ABOUT_BODY.map((p) => (
             <p key={`love-${p.slice(0, 24)}`}>{p}</p>
           ))}
@@ -81,7 +93,12 @@ export function AboutPage() {
           <span>Our work</span>
           <Link to={`${base}/films`} className={styles.explore}>
             <span>Explore all</span>
-            <img src="/assets/arrow-union.svg" alt="" width={6.207} height={8.354} />
+            <img
+              src="/assets/arrow-union.svg"
+              alt=""
+              width={6.207}
+              height={8.354}
+            />
           </Link>
         </div>
 

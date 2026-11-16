@@ -37,7 +37,7 @@ const SEED_PROJECTS = [
     year: '2024',
     client: 'Pepsi',
     service: 'Event Film',
-    category: 'corporate',
+    category: 'promotional',
     description: [
       'Khachik Media created event films for Pepsi Sri Lanka that feel human and hold attention from the first frame.',
     ],
@@ -93,7 +93,7 @@ const SEED_PROJECTS = [
     year: '2024',
     client: 'Samay Raina',
     service: 'Artist Event',
-    category: 'corporate',
+    category: 'promotional',
     description: ['Artist event coverage with natural, warm footage that holds attention online and offline.'],
   },
 ] as const

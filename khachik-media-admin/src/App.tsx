@@ -1,9 +1,9 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AdminShell } from './components/AdminShell'
 import { LoginPage } from './pages/LoginPage'
+import { MediaLibraryPage } from './pages/MediaLibraryPage'
 import { OverviewPage } from './pages/OverviewPage'
-import { ProjectEditorPage } from './pages/ProjectEditorPage'
-import { ProjectsPage } from './pages/ProjectsPage'
+import { FILMS_SECTIONS, GLOBE_SECTIONS } from './types'
 
 export default function App() {
   return (
@@ -12,9 +12,40 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route element={<AdminShell />}>
           <Route path="/" element={<OverviewPage />} />
-          <Route path="/projects" element={<ProjectsPage />} />
-          <Route path="/projects/new" element={<ProjectEditorPage />} />
-          <Route path="/projects/:id" element={<ProjectEditorPage />} />
+          <Route
+            path="/films"
+            element={
+              <MediaLibraryPage
+                title="Films"
+                subtitle="Category grid videos"
+                tabs={FILMS_SECTIONS}
+                accept="video"
+                showMeta
+              />
+            }
+          />
+          <Route
+            path="/stills"
+            element={
+              <MediaLibraryPage
+                title="Stills"
+                subtitle="Photography grid"
+                tabs={[{ id: 'stills', label: 'Stills' }]}
+                accept="image"
+              />
+            }
+          />
+          <Route
+            path="/globe"
+            element={
+              <MediaLibraryPage
+                title="Globe"
+                subtitle="Home sphere HQ clips"
+                tabs={GLOBE_SECTIONS}
+                accept="video"
+              />
+            }
+          />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

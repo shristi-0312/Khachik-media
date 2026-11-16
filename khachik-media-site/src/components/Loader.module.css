@@ -1,31 +1,42 @@
-.loader {
+/* Back: red shutter over the home/video layer */
+.root {
   position: fixed;
   inset: 0;
   z-index: 200;
+  pointer-events: auto;
+}
+
+.shutter {
+  position: absolute;
+  inset: 0;
   background: var(--color-red);
-  /* No flex-centering — badge is pinned to Home hero wordmark position */
   transform: translate3d(0, 0, 0);
   transition: transform 700ms cubic-bezier(0.76, 0, 0.24, 1);
   will-change: transform;
 }
 
 .exiting {
-  transform: translate3d(0, -100%, 0);
+  transform: translate3d(0, -110%, 0);
   pointer-events: none;
 }
 
+/*
+ * Front: Khachik Media — above the red shutter (and any video behind it).
+ * Portaled to document.body so it never rides the shutter transform.
+ */
 .badge {
-  position: absolute;
+  position: fixed;
   left: 50%;
-  /* top set in JS: 450px * artboardScale — matches Home hero wordmark */
+  /* top set in JS to match Home hero wordmark */
+  z-index: 300;
   height: 86px;
   background: rgba(255, 255, 255, 0.04);
   overflow: hidden;
-  flex: none;
+  transform: translate(-50%, -50%);
   will-change: width;
+  pointer-events: none;
 }
 
-/* Identical to Wordmark.module.css .inner */
 .inner {
   position: absolute;
   left: 50%;
@@ -57,7 +68,6 @@
   z-index: 1;
 }
 
-/* Identical to Wordmark.module.css .mark — same box as .percent */
 .mark {
   position: absolute;
   left: 0;

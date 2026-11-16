@@ -26,7 +26,7 @@ export interface Atlas {
   dispose(): void
 }
 
-const CELL_W = 256
+const CELL_W = 384
 const CELL_H = Math.round((CELL_W * GLOBE.tileH) / GLOBE.tileW) // keep the tile aspect
 const ATLAS_COLS = 16
 
@@ -93,7 +93,8 @@ function createLoopingVideo(src: string, startOffset = 0): HTMLVideoElement {
 }
 
 export function buildAtlas(projects: Project[]): Atlas {
-  const tilesPerProject = GLOBE.clusterCols * GLOBE.clusterRows
+  // One atlas cell per project — single video frame on the globe.
+  const tilesPerProject = 1
   const cellCount = projects.length * tilesPerProject
   const rows = Math.ceil(cellCount / ATLAS_COLS)
 
@@ -266,13 +267,12 @@ function washCell(
   ctx.beginPath()
   ctx.rect(x, y, CELL_W, CELL_H)
   ctx.clip()
-  ctx.globalCompositeOperation = 'color'
-  ctx.globalAlpha = 0.62
-  ctx.fillStyle = accent
-  ctx.fillRect(x, y, CELL_W, CELL_H)
+  // Barely-there wash — keep true footage colour so quality is judgable.
+  void accent
+  void matte
   ctx.globalCompositeOperation = 'source-over'
-  ctx.globalAlpha = 0.18
-  ctx.fillStyle = matte
+  ctx.globalAlpha = 0.04
+  ctx.fillStyle = '#000'
   ctx.fillRect(x, y, CELL_W, CELL_H)
   ctx.restore()
 }

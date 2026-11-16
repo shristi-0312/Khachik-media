@@ -3,6 +3,13 @@
   flex-direction: column;
   gap: 22px;
   align-items: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
 }
 
 .horizontal {
@@ -43,8 +50,9 @@
   height: 700px;
 }
 
+/* Figma Video Frame / About work tiles — rgba(0,0,0,0.04) */
 .gray .fill {
-  background: var(--color-placeholder);
+  background: var(--color-surface-soft-2);
 }
 
 .red .fill {

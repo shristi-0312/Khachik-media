@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 const mediaType = z.enum(['image', 'video'])
-const category = z.enum(['promotional', 'corporate', 'advertisements', 'short-forms'])
+const category = z.enum(['promotional', 'advertisements', 'short-forms'])
 const gallerySlot = z.enum(['full', 'pair-1', 'pair-2', 'triple-1', 'triple-2', 'triple-3'])
 
 export const loginSchema = z.object({
@@ -42,4 +42,33 @@ export const presignSchema = z.object({
   slug: z.string().min(1),
   contentType: z.string().min(1),
   filename: z.string().optional(),
+})
+
+const mediaSection = z.enum([
+  'films_short_forms',
+  'films_promotional',
+  'films_advertisements',
+  'stills',
+  'globe_horizontal',
+  'globe_vertical',
+])
+
+export const mediaPresignSchema = z.object({
+  section: mediaSection,
+  contentType: z.string().min(1),
+  filename: z.string().optional(),
+})
+
+export const mediaBodySchema = z.object({
+  section: mediaSection,
+  title: z.string().default(''),
+  dateLabel: z.string().default(''),
+  mediaType,
+  url: z.string().url(),
+  published: z.boolean().optional(),
+  sortOrder: z.number().int().optional(),
+})
+
+export const mediaPatchSchema = mediaBodySchema.partial().omit({ section: true }).extend({
+  section: mediaSection.optional(),
 })

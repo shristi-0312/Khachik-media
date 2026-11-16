@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import styles from './Artboard.module.css'
 
 export function Artboard({ children }: { children: ReactNode }) {
@@ -27,7 +27,16 @@ export function Artboard({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <div className={styles.outer} style={{ height }}>
+    <div
+      className={styles.outer}
+      style={
+        {
+          height,
+          // Heroes use this so 100dvh maps correctly through artboard scale.
+          ['--artboard-scale']: String(scale),
+        } as CSSProperties
+      }
+    >
       <div
         ref={ref}
         className={styles.inner}

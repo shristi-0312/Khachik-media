@@ -1,8 +1,9 @@
-import { GLOBE } from './config'
+import { GLOBE, clusterPitch } from './config'
 
 /**
  * A tile's place on the sphere, expressed in surface units (arc length in px
  * from the (lon 0, lat 0) point). u runs along the equator, v toward the poles.
+ * `u`/`v` are the tile centre; geometry expands ±w/2, ±h/2.
  */
 export interface TileSlot {
   id: string
@@ -13,6 +14,7 @@ export interface TileSlot {
   v: number
   w: number
   h: number
+  orientation: 'horizontal' | 'vertical'
 }
 
 export interface ClusterSlot {
@@ -20,6 +22,7 @@ export interface ClusterSlot {
   projectIndex: number
   u: number
   v: number
+  orientation: 'horizontal' | 'vertical'
   shape: string
 }
 
@@ -28,180 +31,90 @@ export interface Layout {
   clusters: ClusterSlot[]
 }
 
-type TileDef = {
-  tileIndex: number
-  ou: number
-  ov: number
-  w: number
-  h: number
+export function orientationForCluster(clusterIndex: number): 'horizontal' | 'vertical' {
+  return clusterIndex % 2 === 0 ? 'horizontal' : 'vertical'
 }
 
 /**
- * Every cluster occupies the SAME outer rectangle (3×2 unit cells), evenly
- * spaced on the sphere — like Griflan Labs. Asymmetry lives only inside:
- * different ways to subdivide that fixed frame into rectangles.
+ * Frame size in surface units. Edges always land on lattice lines
+ * (integer multiples of tileW / tileH).
+ *
+ * Slot is a 3×3 cell block. Horizontal fills all 3×3.
+ * Vertical fills 2×3, left-aligned in the slot (empty 1-col gutter on the right)
+ * so both left and right edges sit on meridians.
  */
-function packFrame(shape: string, W: number, H: number, G: number): TileDef[] {
-  const CW = 3 * W + 2 * G
-  const CH = 2 * H + G
+function singleVideoFrame(orientation: 'horizontal' | 'vertical') {
+  const { tileW: W, tileH: H, clusterCols, clusterRows } = GLOBE
+  const slotW = clusterCols * W
+  const slotH = clusterRows * H
 
-  /** Place a tile covering [col, row] with span in unit cells (origin = frame centre). */
-  const cell = (
-    tileIndex: number,
-    col: number,
-    row: number,
-    colSpan: number,
-    rowSpan: number,
-  ): TileDef => {
-    const w = colSpan * W + (colSpan - 1) * G
-    const h = rowSpan * H + (rowSpan - 1) * G
-    const ou = -CW / 2 + col * (W + G) + w / 2
-    const ov = CH / 2 - row * (H + G) - h / 2
-    return { tileIndex, ou, ov, w, h }
+  if (orientation === 'horizontal') {
+    return { w: slotW, h: slotH, du: 0, dv: 0 }
   }
-
-  switch (shape) {
-    case 'leftTall':
-      // Tall media left, 2×2 collage right — classic case-study board.
-      return [
-        cell(0, 0, 0, 1, 2),
-        cell(1, 1, 0, 1, 1),
-        cell(2, 2, 0, 1, 1),
-        cell(3, 1, 1, 1, 1),
-        cell(5, 2, 1, 1, 1),
-      ]
-    case 'rightTall':
-      return [
-        cell(1, 0, 0, 1, 1),
-        cell(2, 1, 0, 1, 1),
-        cell(0, 2, 0, 1, 2),
-        cell(3, 0, 1, 1, 1),
-        cell(4, 1, 1, 1, 1),
-      ]
-    case 'topBanner':
-      // Full-width hero strip + three equal below.
-      return [
-        cell(0, 0, 0, 3, 1),
-        cell(3, 0, 1, 1, 1),
-        cell(4, 1, 1, 1, 1),
-        cell(5, 2, 1, 1, 1),
-      ]
-    case 'bottomBanner':
-      return [
-        cell(0, 0, 0, 1, 1),
-        cell(1, 1, 0, 1, 1),
-        cell(2, 2, 0, 1, 1),
-        cell(5, 0, 1, 3, 1),
-      ]
-    case 'topWide':
-      // Wide top-left + one top-right, three below.
-      return [
-        cell(0, 0, 0, 2, 1),
-        cell(2, 2, 0, 1, 1),
-        cell(3, 0, 1, 1, 1),
-        cell(4, 1, 1, 1, 1),
-        cell(5, 2, 1, 1, 1),
-      ]
-    case 'bigLeft':
-      // 2×2 hero + two stacked on the right.
-      return [
-        cell(0, 0, 0, 2, 2),
-        cell(2, 2, 0, 1, 1),
-        cell(5, 2, 1, 1, 1),
-      ]
-    case 'bigRight':
-      return [
-        cell(1, 0, 0, 1, 1),
-        cell(0, 1, 0, 2, 2),
-        cell(3, 0, 1, 1, 1),
-      ]
-    case 'quad': {
-      // Four equal tiles in a 2×2 — same outer frame, larger panes.
-      const qw = (CW - G) / 2
-      const qh = (CH - G) / 2
-      return [
-        { tileIndex: 0, ou: -CW / 2 + qw / 2, ov: CH / 2 - qh / 2, w: qw, h: qh },
-        { tileIndex: 2, ou: CW / 2 - qw / 2, ov: CH / 2 - qh / 2, w: qw, h: qh },
-        { tileIndex: 3, ou: -CW / 2 + qw / 2, ov: -CH / 2 + qh / 2, w: qw, h: qh },
-        { tileIndex: 5, ou: CW / 2 - qw / 2, ov: -CH / 2 + qh / 2, w: qw, h: qh },
-      ]
-    }
-    case 'grid32':
-    default:
-      return [
-        cell(0, 0, 0, 1, 1),
-        cell(1, 1, 0, 1, 1),
-        cell(2, 2, 0, 1, 1),
-        cell(3, 0, 1, 1, 1),
-        cell(4, 1, 1, 1, 1),
-        cell(5, 2, 1, 1, 1),
-      ]
-  }
+  // 2×3 — left-aligned in the 3-col slot (edges on lattice).
+  const w = 2 * W
+  const h = slotH
+  // Slot centre is at +1.5W from left; 2-wide left-aligned centre is at +1W.
+  return { w, h, du: -0.5 * W, dv: 0 }
 }
 
-/** Cycle so neighbours rarely share the same internal packing. */
-const SHAPES = [
-  'grid32',
-  'leftTall',
-  'topBanner',
-  'bigLeft',
-  'quad',
-  'rightTall',
-  'topWide',
-  'bottomBanner',
-  'bigRight',
-  'leftTall',
-  'grid32',
-  'quad',
-  'topBanner',
-  'bigLeft',
-] as const
+/** Kept for projects.ts compatibility — one tile, aspect of H or V frame. */
+export function boardTiles(clusterIndex: number): { tileIndex: number; aspect: number; area: number }[] {
+  const orientation = orientationForCluster(clusterIndex)
+  const { w, h } = singleVideoFrame(orientation)
+  return [{ tileIndex: 0, aspect: w / h, area: w * h }]
+}
 
 export function shapeForCluster(clusterIndex: number): string {
-  return SHAPES[clusterIndex % SHAPES.length]
-}
-
-/** Tiles inside a board, largest first — used to decide where motion/photos go. */
-export function boardTiles(clusterIndex: number): { tileIndex: number; aspect: number; area: number }[] {
-  const { tileW, tileH, tileGap } = GLOBE
-  return packFrame(shapeForCluster(clusterIndex), tileW, tileH, tileGap)
-    .map((d) => ({ tileIndex: d.tileIndex, aspect: d.w / d.h, area: d.w * d.h }))
-    .sort((a, b) => b.area - a.area)
+  return orientationForCluster(clusterIndex)
 }
 
 /**
- * Regular staggered grid of equal cluster frames; only the packing inside
- * each frame varies (Griflan Labs: same section size/spacing, asymmetric guts).
+ * Regular staggered grid of equal 3×3 slots. Slot centres sit on half-cell
+ * lattice points so a 3-odd-wide frame has edges on meridians/parallels.
+ * Odd clusters: vertical 2×3; even: horizontal 3×3 — one video each.
  */
 export function buildLayout(projectCount: number): Layout {
-  const { gridCols, gridRows, pitchX, pitchY, tileW, tileH, tileGap, staggerOddRows } = GLOBE
+  const { gridCols, gridRows, staggerOddRows, tileW, tileH } = GLOBE
+  const { pitchX, pitchY } = clusterPitch()
 
   const tiles: TileSlot[] = []
   const clusters: ClusterSlot[] = []
+
+  // Half-cell shift: 3-wide / 3-tall frames then edge on integer lattice lines.
+  const alignU = 0.5 * tileW
+  const alignV = 0.5 * tileH
 
   let clusterIndex = 0
   for (let r = 0; r < gridRows; r++) {
     for (let c = 0; c < gridCols; c++) {
       const stagger = staggerOddRows && r % 2 === 1 ? pitchX / 2 : 0
-      const u = c * pitchX + stagger
-      const v = (r - (gridRows - 1) / 2) * pitchY
+      const slotU = c * pitchX + stagger + alignU
+      const slotV = (r - (gridRows - 1) / 2) * pitchY + alignV
       const projectIndex = clusterIndex % projectCount
-      const shape = shapeForCluster(clusterIndex)
+      const orientation = orientationForCluster(clusterIndex)
+      const frame = singleVideoFrame(orientation)
 
-      clusters.push({ clusterIndex, projectIndex, u, v, shape })
+      clusters.push({
+        clusterIndex,
+        projectIndex,
+        u: slotU,
+        v: slotV,
+        orientation,
+        shape: orientation,
+      })
 
-      for (const def of packFrame(shape, tileW, tileH, tileGap)) {
-        tiles.push({
-          id: `${clusterIndex}-${def.tileIndex}`,
-          clusterIndex,
-          projectIndex,
-          tileIndex: def.tileIndex,
-          u: u + def.ou,
-          v: v + def.ov,
-          w: def.w,
-          h: def.h,
-        })
-      }
+      tiles.push({
+        id: `${clusterIndex}-0`,
+        clusterIndex,
+        projectIndex,
+        tileIndex: 0,
+        u: slotU + frame.du,
+        v: slotV + frame.dv,
+        w: frame.w,
+        h: frame.h,
+        orientation,
+      })
       clusterIndex++
     }
   }

@@ -1,31 +1,28 @@
-import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Navigate, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { isLoggedIn, logout } from '../api'
 
 const TITLES: Record<string, { title: string; subtitle: string }> = {
   '/': {
     title: 'Overview',
-    subtitle: 'A quick look at your projects',
+    subtitle: 'Media library pulse',
   },
-  '/projects': {
-    title: 'Projects',
-    subtitle: 'Search, edit, and publish work',
+  '/films': {
+    title: 'Films',
+    subtitle: 'Short-forms · Promotional · Advertisements',
   },
-}
-
-function resolveMeta(pathname: string) {
-  if (pathname.startsWith('/projects/')) {
-    const isNew = pathname.endsWith('/new')
-    return {
-      title: isNew ? 'New project' : 'Edit project',
-      subtitle: isNew ? 'Add a new project to the site' : 'Update details, media, and status',
-    }
-  }
-  return TITLES[pathname] ?? { title: 'Admin', subtitle: 'Khachik Media' }
+  '/stills': {
+    title: 'Stills',
+    subtitle: 'Photography for the Stills page',
+  },
+  '/globe': {
+    title: 'Globe',
+    subtitle: 'High-quality clips for the home sphere',
+  },
 }
 
 export function AdminShell() {
   const { pathname } = useLocation()
-  const meta = resolveMeta(pathname)
+  const meta = TITLES[pathname] ?? { title: 'Admin', subtitle: 'Khachik Media' }
   const email = localStorage.getItem('km_email') ?? 'Signed in'
 
   if (!isLoggedIn()) return <Navigate to="/login" replace />
@@ -37,7 +34,7 @@ export function AdminShell() {
           <div className="brand-mark">KM</div>
           <div className="brand-copy">
             <span className="brand-name">Khachik</span>
-            <span className="brand-sub">Admin</span>
+            <span className="brand-sub">Media library</span>
           </div>
         </div>
 
@@ -46,9 +43,17 @@ export function AdminShell() {
             <OverviewIcon />
             <span className="nav-label">Overview</span>
           </NavLink>
-          <NavLink to="/projects" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
-            <ProjectsIcon />
-            <span className="nav-label">Projects</span>
+          <NavLink to="/films" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+            <FilmsIcon />
+            <span className="nav-label">Films</span>
+          </NavLink>
+          <NavLink to="/stills" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+            <StillsIcon />
+            <span className="nav-label">Stills</span>
+          </NavLink>
+          <NavLink to="/globe" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+            <GlobeIcon />
+            <span className="nav-label">Globe</span>
           </NavLink>
         </nav>
 
@@ -59,7 +64,7 @@ export function AdminShell() {
             className="button secondary sm"
             onClick={() => {
               logout()
-              window.location.href = '/admin/login'
+              window.location.href = `${import.meta.env.BASE_URL}login`.replace(/\/{2,}/g, '/')
             }}
           >
             Log out
@@ -73,11 +78,6 @@ export function AdminShell() {
             <h1>{meta.title}</h1>
             <p>{meta.subtitle}</p>
           </div>
-          {pathname === '/projects' || pathname === '/' ? (
-            <Link className="button primary" to="/projects/new">
-              New project
-            </Link>
-          ) : null}
         </header>
         <div className="content">
           <Outlet />
@@ -98,14 +98,30 @@ function OverviewIcon() {
   )
 }
 
-function ProjectsIcon() {
+function FilmsIcon() {
   return (
     <svg className="nav-ico" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M4 7.5A2.5 2.5 0 0 1 6.5 5h3.2L11 7h6.5A2.5 2.5 0 0 1 20 9.5v7A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-9Z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-      />
+      <rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M10 9.5v5l4.5-2.5L10 9.5Z" fill="currentColor" />
+    </svg>
+  )
+}
+
+function StillsIcon() {
+  return (
+    <svg className="nav-ico" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="9" cy="11" r="2" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M3 16l4.5-3.5L12 16l3-2.5L21 16" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  )
+}
+
+function GlobeIcon() {
+  return (
+    <svg className="nav-ico" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M4 12h16M12 4c2.5 2.8 2.5 13.2 0 16M12 4c-2.5 2.8-2.5 13.2 0 16" stroke="currentColor" strokeWidth="1.6" />
     </svg>
   )
 }

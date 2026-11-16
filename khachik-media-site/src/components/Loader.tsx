@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import styles from './Loader.module.css'
 
 type Props = {
@@ -6,14 +7,16 @@ type Props = {
 }
 
 /**
- * Approved Design Home hero wordmark frame: 219×86 at hero center (y=450).
- * % and logo share the same inner 360×78 slot so 100% → Khachik does not jump.
+ * Hero wordmark frame: 219×86, centered on the viewport (matches 50%-tall heroes).
+ *
+ * Layering (front → back):
+ *   1. Khachik Media badge — viewport-fixed, never moves, always on top
+ *   2. Red shutter — slides up on exit
+ *   3. Home page (hero / video) — already painted underneath
  */
 const WIDTH_START = 120
 const WIDTH_END = 219
 const FRAME_H = 86
-const HERO_CENTER_Y = 450
-const ARTBOARD = 1470
 
 const COUNT_MS = 2000
 const CROSSFADE_MS = 560
@@ -33,12 +36,8 @@ function formatPercent(n: number) {
   return `${String(n).padStart(3, '0')}%`
 }
 
-function artboardScale() {
-  return Math.min(1, window.innerWidth / ARTBOARD)
-}
-
 export function Loader({ onDone }: Props) {
-  const rootRef = useRef<HTMLDivElement>(null)
+  const shutterRef = useRef<HTMLDivElement>(null)
   const badgeRef = useRef<HTMLDivElement>(null)
   const percentRef = useRef<HTMLSpanElement>(null)
   const brandRef = useRef<HTMLImageElement>(null)
@@ -50,9 +49,9 @@ export function Loader({ onDone }: Props) {
     if (!badge) return
 
     const placeBadge = () => {
-      const scale = artboardScale()
-      badge.style.top = `${HERO_CENTER_Y * scale}px`
-      badge.style.transform = 'translate(-50%, -50%)'
+      // Match hero wordmark at 50% of the viewport-tall hero.
+      badge.style.top = `${window.innerHeight / 2}px`
+      badge.style.left = '50%'
     }
 
     placeBadge()
@@ -85,7 +84,6 @@ export function Loader({ onDone }: Props) {
         percentEl.textContent = formatPercent(progress)
       }
 
-      // Crossfade only after width has fully settled at 219
       const fade = smoothstep((elapsed - COUNT_MS) / CROSSFADE_MS)
       percentEl.style.opacity = String(1 - fade)
       brandEl.style.opacity = String(fade)
@@ -96,7 +94,8 @@ export function Loader({ onDone }: Props) {
         percentEl.style.opacity = '0'
         brandEl.style.opacity = '1'
         badge.style.width = `${WIDTH_END}px`
-        rootRef.current?.classList.add(styles.exiting)
+        // Badge stays put + on top. Only the red shutter moves.
+        shutterRef.current?.classList.add(styles.exiting)
         exitTimer = window.setTimeout(() => onDoneRef.current(), EXIT_MS)
         return
       }
@@ -112,64 +111,67 @@ export function Loader({ onDone }: Props) {
     }
   }, [])
 
-  return (
+  const badge = (
     <div
-      ref={rootRef}
-      className={styles.loader}
-      aria-live="polite"
-      aria-label="Loading"
+      ref={badgeRef}
+      className={styles.badge}
+      data-loader-badge="1"
+      style={{ width: WIDTH_START, height: FRAME_H }}
     >
-      {/* Same geometry as Home <Wordmark /> — fixed to hero center */}
-      <div
-        ref={badgeRef}
-        className={styles.badge}
-        style={{ width: WIDTH_START, height: FRAME_H }}
-      >
-        {/* Shared inner slot (Figma Frame 3: 360×78) — % and logo occupy the same box */}
-        <div className={styles.inner}>
-          <span ref={percentRef} className={styles.percent}>
-            {formatPercent(0)}
-          </span>
-          <img
-            ref={brandRef}
-            className={styles.mark}
-            src="/assets/hero-wordmark.svg"
-            alt=""
-            width={360}
-            height={78}
-            style={{ opacity: 0 }}
-          />
-        </div>
-
+      <div className={styles.inner}>
+        <span ref={percentRef} className={styles.percent}>
+          {formatPercent(0)}
+        </span>
         <img
-          className={`${styles.corner} ${styles.tl}`}
-          src="/assets/wordmark-corner.svg"
+          ref={brandRef}
+          className={styles.mark}
+          src="/assets/hero-wordmark.svg"
           alt=""
-          width={8}
-          height={8}
-        />
-        <img
-          className={`${styles.corner} ${styles.bl}`}
-          src="/assets/wordmark-corner.svg"
-          alt=""
-          width={8}
-          height={8}
-        />
-        <img
-          className={`${styles.corner} ${styles.tr}`}
-          src="/assets/wordmark-corner-r.svg"
-          alt=""
-          width={8}
-          height={8}
-        />
-        <img
-          className={`${styles.corner} ${styles.br}`}
-          src="/assets/wordmark-corner-r.svg"
-          alt=""
-          width={8}
-          height={8}
+          width={360}
+          height={78}
+          style={{ opacity: 0 }}
         />
       </div>
+
+      <img
+        className={`${styles.corner} ${styles.tl}`}
+        src="/assets/wordmark-corner.svg"
+        alt=""
+        width={8}
+        height={8}
+      />
+      <img
+        className={`${styles.corner} ${styles.bl}`}
+        src="/assets/wordmark-corner.svg"
+        alt=""
+        width={8}
+        height={8}
+      />
+      <img
+        className={`${styles.corner} ${styles.tr}`}
+        src="/assets/wordmark-corner-r.svg"
+        alt=""
+        width={8}
+        height={8}
+      />
+      <img
+        className={`${styles.corner} ${styles.br}`}
+        src="/assets/wordmark-corner-r.svg"
+        alt=""
+        width={8}
+        height={8}
+      />
     </div>
+  )
+
+  return (
+    <>
+      {/* Back layer — red only; slides away on exit */}
+      <div className={styles.root} aria-live="polite" aria-label="Loading">
+        <div ref={shutterRef} className={styles.shutter} aria-hidden="true" />
+      </div>
+      {/* Front layer — Khachik Media; fixed, never translates with shutter */}
+      {createPortal(badge, document.body)}
+    </>
   )
 }

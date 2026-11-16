@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Canvas } from '@react-three/fiber'
-import { buildAtlas, type Atlas } from '../globe/atlas'
+import * as THREE from 'three'
+import { apiConfigured, fetchMedia } from '../api/client'
 import { GLOBE, R } from '../globe/config'
 import { GlobeScene, type Readout } from '../globe/GlobeScene'
 import { buildLayout } from '../globe/layout'
-import { PROJECTS } from '../globe/projects'
+import { buildGlobeProjects, PROJECTS, type Project as GlobeProject } from '../globe/projects'
+import { buildVideoPool, type VideoPool } from '../globe/videoPool'
 import { useBasePath } from '../hooks/useBasePath'
 import styles from './HomeGlobe.module.css'
 
@@ -13,12 +15,11 @@ import styles from './HomeGlobe.module.css'
 export function HomeGlobe() {
   const host = useRef<HTMLDivElement>(null)
   const [ready, setReady] = useState(false)
-  const [atlas, setAtlas] = useState<Atlas | null>(null)
+  const [videos, setVideos] = useState<VideoPool | null>(null)
+  const [globeProjects, setGlobeProjects] = useState<GlobeProject[]>(PROJECTS)
   const navigate = useNavigate()
   const base = useBasePath()
 
-  // Wait until the slot has real layout size (loader / artboard scale can
-  // leave R3F stuck on the default 300×150 canvas).
   useLayoutEffect(() => {
     const el = host.current
     if (!el) return
@@ -42,18 +43,42 @@ export function HomeGlobe() {
     }
   }, [])
 
-  // Build the atlas in an effect so React Strict Mode dispose/remount gets a
-  // fresh set of <video> elements (useMemo would reuse a disposed atlas).
+  // Load CloudFront HQ clips when the API is configured; else keep local stock.
   useEffect(() => {
-    const next = buildAtlas(PROJECTS)
-    setAtlas(next)
+    if (!apiConfigured()) return
+    let cancelled = false
+    void (async () => {
+      try {
+        const [hItems, vItems] = await Promise.all([
+          fetchMedia('globe_horizontal'),
+          fetchMedia('globe_vertical'),
+        ])
+        if (cancelled) return
+        const h = hItems.map((i) => i.url)
+        const v = vItems.map((i) => i.url)
+        if (h.length || v.length) {
+          setGlobeProjects(buildGlobeProjects(h.length ? h : undefined, v.length ? v : undefined))
+        }
+      } catch {
+        /* keep local fallbacks */
+      }
+    })()
     return () => {
-      next.dispose()
-      setAtlas(null)
+      cancelled = true
     }
   }, [])
 
-  const layout = useMemo(() => buildLayout(PROJECTS.length), [])
+  // Native VideoTextures so uploaded HQ stays sharp on large frames.
+  useEffect(() => {
+    const next = buildVideoPool()
+    setVideos(next)
+    return () => {
+      next.dispose()
+      setVideos(null)
+    }
+  }, [globeProjects])
+
+  const layout = useMemo(() => buildLayout(globeProjects.length), [globeProjects.length])
   const [hovered, setHovered] = useState<number | null>(null)
 
   const tooltip = useRef<HTMLDivElement>(null)
@@ -69,21 +94,21 @@ export function HomeGlobe() {
         el.style.opacity = '0'
         return
       }
-      const project = PROJECTS[layout.clusters[cluster].projectIndex]
-      el.textContent = `${project.name} — ${project.category}`
+      const project = globeProjects[layout.clusters[cluster]!.projectIndex]
+      el.textContent = `${project?.name ?? ''} — ${project?.category ?? ''}`
       el.style.transform = `translate(${x + 14}px, ${y + 18}px)`
       el.style.opacity = '1'
     },
-    [layout],
+    [layout, globeProjects],
   )
 
   const onSelect = useCallback(
     (clusterIndex: number) => {
-      const project = PROJECTS[layout.clusters[clusterIndex].projectIndex]
+      const project = globeProjects[layout.clusters[clusterIndex]!.projectIndex]
       if (!project) return
       navigate(`${base}/projects/${project.slug}`)
     },
-    [layout, navigate, base],
+    [layout, navigate, base, globeProjects],
   )
 
   const onReadout = useCallback((r: Readout) => {
@@ -97,18 +122,22 @@ export function HomeGlobe() {
       className={styles.stage}
       style={{ cursor: hovered !== null ? 'pointer' : 'grab' }}
     >
-      {ready && atlas ? (
+      {ready && videos ? (
         <Canvas
           orthographic
-          dpr={[1, 1.75]}
+          dpr={[1, 2]}
           camera={{ position: [0, GLOBE.panDefault * R, R * 4], near: 1, far: R * 10, zoom: 1 }}
           gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
-          onCreated={({ gl }) => gl.setClearColor(GLOBE.bg)}
+          onCreated={({ gl }) => {
+            gl.setClearColor(GLOBE.bg)
+            gl.outputColorSpace = THREE.SRGBColorSpace
+          }}
           style={{ width: '100%', height: '100%', touchAction: 'pan-y' }}
         >
           <GlobeScene
             layout={layout}
-            atlas={atlas}
+            videos={videos}
+            projects={globeProjects}
             hoveredCluster={hovered}
             onHover={onHover}
             onSelect={onSelect}

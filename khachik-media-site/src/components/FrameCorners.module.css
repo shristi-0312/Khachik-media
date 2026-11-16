@@ -1,59 +1,103 @@
+/*
+ * Figma ELEMENTS corners: 8×8 L-brackets, 1px stroke.
+ * Pure CSS so light surfaces always get visible black marks
+ * (the old TR SVG asset was white and disappeared on gray/white).
+ */
 .corner {
   position: absolute;
   width: 8px;
   height: 8px;
+  box-sizing: border-box;
   pointer-events: none;
   z-index: 2;
 }
 
-.tl {
-  left: -1px;
-  top: -1px;
+.black {
+  --frame-corner: #000;
 }
 
-.bl {
-  left: -1px;
-  bottom: -1px;
-  transform: scaleY(-1);
+.white {
+  --frame-corner: #fff;
+}
+
+.tl {
+  left: 0;
+  top: 0;
+  border-top: 1px solid var(--frame-corner);
+  border-left: 1px solid var(--frame-corner);
 }
 
 .tr {
-  right: -1px;
-  top: -1px;
-  transform: scaleY(-1) rotate(180deg);
+  right: 0;
+  top: 0;
+  border-top: 1px solid var(--frame-corner);
+  border-right: 1px solid var(--frame-corner);
+}
+
+.bl {
+  left: 0;
+  bottom: 0;
+  border-bottom: 1px solid var(--frame-corner);
+  border-left: 1px solid var(--frame-corner);
 }
 
 .br {
-  right: -1px;
-  bottom: -1px;
-  transform: rotate(180deg);
+  right: 0;
+  bottom: 0;
+  border-bottom: 1px solid var(--frame-corner);
+  border-right: 1px solid var(--frame-corner);
 }
 
-.edgeTop,
-.edgeBottom {
+/* Mid-edge ticks (footer logo divider) — Figma Edge Top / Edge Bottom */
+.edge {
   position: absolute;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: 15px;
   height: 8px;
+  box-sizing: border-box;
   pointer-events: none;
   z-index: 2;
   transform: translateX(-50%);
 }
 
-.edgeTop {
-  top: -1px;
+.edge::before,
+.edge::after {
+  content: '';
+  position: absolute;
+  background: var(--frame-corner);
 }
 
-.edgeTop img {
-  transform: rotate(90deg);
+.edgeTop {
+  top: 0;
+}
+
+.edgeTop::before {
+  left: 7px;
+  top: 0;
+  width: 1px;
+  height: 8px;
+}
+
+.edgeTop::after {
+  left: 0;
+  top: 0;
+  width: 15px;
+  height: 1px;
 }
 
 .edgeBottom {
-  bottom: -1px;
+  bottom: 0;
 }
 
-.edgeBottom img {
-  transform: rotate(-90deg);
+.edgeBottom::before {
+  left: 7px;
+  bottom: 0;
+  width: 1px;
+  height: 8px;
+}
+
+.edgeBottom::after {
+  left: 0;
+  bottom: 0;
+  width: 15px;
+  height: 1px;
 }

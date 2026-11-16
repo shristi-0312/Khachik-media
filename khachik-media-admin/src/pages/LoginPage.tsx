@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { DEMO_MODE, isLoggedIn, login } from '../api'
+import { isLoggedIn, login } from '../api'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -32,33 +32,33 @@ export function LoginPage() {
           <div className="brand-mark">KM</div>
           <div className="brand-copy">
             <span className="brand-name">Khachik</span>
-            <span className="brand-sub">Admin</span>
+            <span className="brand-sub">Media library</span>
           </div>
         </div>
         <h1>Welcome back</h1>
-        <p className="lede">Sign in to manage projects and publishing.</p>
-        {DEMO_MODE ? (
-          <p className="muted" style={{ marginTop: -16, marginBottom: 20 }}>
-            Local demo mode — type any password and hit Sign in. No API required.
-          </p>
-        ) : null}
+        <p className="lede">Sign in to upload Films, Stills, and Globe HQ media.</p>
+        {error ? <p className="error">{error}</p> : null}
         <form className="stack" onSubmit={onSubmit}>
-          <label>
-            Email
-            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required />
-          </label>
-          <label>
-            Password
+          <label className="field">
+            <span>Email</span>
             <input
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              type="password"
+              type="email"
+              autoComplete="username"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder={DEMO_MODE ? 'anything' : undefined}
-              autoComplete="current-password"
             />
           </label>
-          {error ? <p className="error">{error}</p> : null}
+          <label className="field">
+            <span>Password</span>
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </label>
           <button type="submit" className="button primary" disabled={loading}>
             {loading ? 'Signing in…' : 'Sign in'}
           </button>

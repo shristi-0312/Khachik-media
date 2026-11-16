@@ -23,14 +23,16 @@ export function HomePage() {
         <Header />
         <section className={styles.hero}>
           <Wordmark className={styles.wordmark} />
-          <p className={styles.scrollLabel}>Scroll down</p>
-          <img
-            className={styles.scrollIcon}
-            src="/assets/scroll-chevron.svg"
-            alt=""
-            width={32}
-            height={32}
-          />
+          <div className={styles.scrollCue}>
+            <p className={styles.scrollLabel}>Scroll down</p>
+            <img
+              className={styles.scrollIcon}
+              src="/assets/scroll-chevron.svg"
+              alt=""
+              width={32}
+              height={32}
+            />
+          </div>
         </section>
 
         <section className={styles.marqueeSection} aria-label="Clients">
@@ -41,7 +43,11 @@ export function HomePage() {
           <div className={styles.aboutLeft}>
             <p className={styles.label}>About Khachik Media</p>
             <h2 className={styles.headline}>
-              We are all about humane content & holding attention
+              We are all about
+              <br />
+              humane content &amp;
+              <br />
+              holding attention
             </h2>
           </div>
           <div className={styles.aboutRight}>
