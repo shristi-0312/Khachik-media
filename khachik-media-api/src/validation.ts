@@ -72,3 +72,8 @@ export const mediaBodySchema = z.object({
 export const mediaPatchSchema = mediaBodySchema.partial().omit({ section: true }).extend({
   section: mediaSection.optional(),
 })
+
+export const mediaReorderSchema = z.object({
+  section: mediaSection,
+  orderedIds: z.array(z.string().min(1)).min(1),
+})

@@ -5,7 +5,12 @@ import { prisma } from '../db.js'
 import { isMediaSection, type MediaSectionId } from '../mediaSections.js'
 import { createMediaPresignedUpload, putMediaObject } from '../s3.js'
 import { serializeMedia } from '../serializeMedia.js'
-import { mediaBodySchema, mediaPatchSchema, mediaPresignSchema } from '../validation.js'
+import {
+  mediaBodySchema,
+  mediaPatchSchema,
+  mediaPresignSchema,
+  mediaReorderSchema,
+} from '../validation.js'
 
 export const adminMediaRouter = Router()
 adminMediaRouter.use(requireAuth)
@@ -51,6 +56,46 @@ adminMediaRouter.post('/media', async (req, res) => {
   })
 
   res.status(201).json(serializeMedia(item))
+})
+
+adminMediaRouter.post('/media/reorder', async (req, res) => {
+  const parsed = mediaReorderSchema.safeParse(req.body)
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() })
+    return
+  }
+
+  const { section, orderedIds } = parsed.data
+  const uniqueIds = new Set(orderedIds)
+  if (uniqueIds.size !== orderedIds.length) {
+    res.status(400).json({ error: 'orderedIds must be unique' })
+    return
+  }
+
+  const existing = await prisma.mediaItem.findMany({
+    where: { section },
+    select: { id: true },
+  })
+  const existingIds = new Set(existing.map((item) => item.id))
+  if (existing.length !== orderedIds.length || orderedIds.some((id) => !existingIds.has(id))) {
+    res.status(400).json({ error: 'orderedIds must include every item in this section exactly once' })
+    return
+  }
+
+  await prisma.$transaction(
+    orderedIds.map((id, index) =>
+      prisma.mediaItem.update({
+        where: { id },
+        data: { sortOrder: index + 1 },
+      }),
+    ),
+  )
+
+  const items = await prisma.mediaItem.findMany({
+    where: { section },
+    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+  })
+  res.json(items.map(serializeMedia))
 })
 
 adminMediaRouter.patch('/media/:id', async (req, res) => {

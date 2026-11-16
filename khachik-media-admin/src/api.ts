@@ -111,6 +111,13 @@ export async function deleteMedia(id: string) {
   return request<void>(`/admin/media/${id}`, { method: 'DELETE' })
 }
 
+export async function reorderMedia(section: MediaSectionId, orderedIds: string[]) {
+  return request<MediaItem[]>('/admin/media/reorder', {
+    method: 'POST',
+    body: JSON.stringify({ section, orderedIds }),
+  })
+}
+
 function mediaTypeFor(file: File, contentType: string): MediaType {
   if (contentType.startsWith('video/')) return 'video'
   if (contentType.startsWith('image/')) return 'image'

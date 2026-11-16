@@ -1053,16 +1053,70 @@ select {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  cursor: grab;
 }
 
 .media-card.dimmed {
   opacity: 0.55;
 }
 
+.media-card.dragging {
+  opacity: 0.45;
+  cursor: grabbing;
+}
+
+.media-card.drop-target {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px var(--blue-soft);
+}
+
 .media-card-preview {
+  position: relative;
   aspect-ratio: 16 / 10;
   background: #111;
   overflow: hidden;
+}
+
+.media-order-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(23, 23, 23, 0.82);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+
+.media-order-controls {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.media-order-select {
+  flex: 1;
+  min-width: 0;
+  gap: 6px;
+}
+
+.media-order-select select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--bg-card);
+}
+
+.media-order-buttons {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .media-card-preview video,
