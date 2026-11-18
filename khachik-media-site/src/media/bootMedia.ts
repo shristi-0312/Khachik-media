@@ -220,52 +220,8 @@ export async function bootCriticalMedia(
         return
       }
 
-      if (!apiConfigured() || (kind !== 'films' && kind !== 'stills')) {
-        extrasRatio = 1
-        publish()
-        return
-      }
-
-      if (kind === 'stills') {
-        const items = await fetchMedia('stills')
-        const urls = items.map((i) => i.url).filter(Boolean).slice(0, 3)
-        if (!urls.length) {
-          extrasRatio = 1
-          publish()
-          return
-        }
-        let done = 0
-        await Promise.all(
-          urls.map(async (url) => {
-            await preloadImage(url)
-            done += 1
-            extrasRatio = done / urls.length
-            publish()
-          }),
-        )
-      } else {
-        const items = await fetchMedia('films_short_forms')
-        const urls = items.map((i) => i.url).filter(Boolean).slice(0, 2)
-        if (!urls.length) {
-          extrasRatio = 1
-          publish()
-          return
-        }
-        let done = 0
-        await Promise.all(
-          urls.map(async (url) => {
-            const isVideo = /\.(mp4|webm|mov)(\?|$)/i.test(url)
-            if (isVideo) {
-              await preloadVideo(url, () => {})
-            } else {
-              await preloadImage(url)
-            }
-            done += 1
-            extrasRatio = done / urls.length
-            publish()
-          }),
-        )
-      }
+      // Films and Stills paint from posters and in-view loads. Do not
+      // hold the shutter on full-quality downloads.
       extrasRatio = 1
       publish()
     } catch {

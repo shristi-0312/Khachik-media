@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { Project } from '../data/content'
 import { useBasePath } from '../hooks/useBasePath'
+import { videoPosterUrl } from '../media/cdn'
 import { FrameCorners } from './FrameCorners'
 import styles from './ProjectCard.module.css'
 
@@ -88,6 +89,7 @@ function CoverMedia({
         ref={videoRef}
         className={styles.coverMedia}
         src={project.coverUrl}
+        poster={videoPosterUrl(project.coverUrl ?? '') ?? undefined}
         muted
         loop
         playsInline

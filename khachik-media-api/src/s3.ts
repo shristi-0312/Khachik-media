@@ -13,6 +13,11 @@ import {
   makeGlobeThumb,
   thumbKeyFor,
 } from './thumbs.js'
+import {
+  isVideoContentType,
+  optimizeVideoBuffer,
+  posterKeyFor,
+} from './videoOptimize.js'
 
 /** Disable default flexible checksums — they break browser PUTs to presigned URLs. */
 const client = new S3Client({
@@ -158,16 +163,67 @@ export async function ensureGlobeThumb(input: {
   }
 }
 
+/**
+ * After a browser PUT, move the moov atom to the front and store a JPEG poster.
+ * The video is copied, not re-encoded. Missing ffmpeg leaves the original in place.
+ */
+export async function ensureVideoDelivery(input: {
+  key?: string
+  publicUrl?: string
+}): Promise<{ posterKey: string | null; posterUrl: string | null }> {
+  let key = input.key?.replace(/^\//, '')
+  if (!key && input.publicUrl) {
+    try {
+      const u = new URL(input.publicUrl)
+      key = u.pathname.replace(/^\//, '')
+    } catch {
+      key = undefined
+    }
+  }
+  const posterKey = key ? posterKeyFor(key) : null
+  if (!key || !posterKey) {
+    return { posterKey: null, posterUrl: null }
+  }
+
+  const got = await client.send(
+    new GetObjectCommand({ Bucket: config.s3Bucket, Key: key }),
+  )
+  const bytes = await streamToBuffer(got.Body as Readable)
+  const contentType = got.ContentType || 'video/mp4'
+  const optimized = await optimizeVideoBuffer(bytes, contentType)
+  if (optimized.video) {
+    await putObject(key, optimized.video, contentType)
+  }
+  if (optimized.poster) {
+    await putObject(posterKey, optimized.poster, 'image/jpeg')
+    return { posterKey, posterUrl: `${publicBase()}/${posterKey}` }
+  }
+  return { posterKey: null, posterUrl: null }
+}
+
 /** Server-side put — used when the browser cannot PUT directly to S3 (CORS/network). */
 export async function putMediaObject(input: {
   section: MediaSectionId
   contentType: string
   filename?: string
   body: Buffer | Uint8Array | Readable
-}): Promise<{ key: string; publicUrl: string; thumbUrl?: string }> {
+}): Promise<{ key: string; publicUrl: string; thumbUrl?: string; posterUrl?: string }> {
   const key = mediaKey(input.section, input.contentType, input.filename)
   const buffer = await streamToBuffer(input.body)
-  await putObject(key, buffer, input.contentType)
+
+  let body = buffer
+  let posterUrl: string | undefined
+  if (isVideoContentType(input.contentType)) {
+    const optimized = await optimizeVideoBuffer(buffer, input.contentType)
+    if (optimized.video) body = optimized.video
+    const posterKey = posterKeyFor(key)
+    if (optimized.poster && posterKey) {
+      await putObject(posterKey, optimized.poster, 'image/jpeg')
+      posterUrl = `${publicBase()}/${posterKey}`
+    }
+  }
+
+  await putObject(key, body, input.contentType)
 
   let thumbUrl: string | undefined
   if (isImageContentType(input.contentType)) {
@@ -175,5 +231,10 @@ export async function putMediaObject(input: {
     if (thumbKey) thumbUrl = `${publicBase()}/${thumbKey}`
   }
 
-  return { key, publicUrl: `${publicBase()}/${key}`, ...(thumbUrl ? { thumbUrl } : {}) }
+  return {
+    key,
+    publicUrl: `${publicBase()}/${key}`,
+    ...(thumbUrl ? { thumbUrl } : {}),
+    ...(posterUrl ? { posterUrl } : {}),
+  }
 }

@@ -203,14 +203,14 @@ export async function uploadMediaFile(section: MediaSectionId, file: File) {
     throw new Error(`S3 upload failed (${put.status})`)
   }
 
-  if (mediaType === 'image') {
+  if (mediaType === 'image' || mediaType === 'video') {
     try {
       await request('/admin/uploads/ensure-thumb', {
         method: 'POST',
         body: JSON.stringify({ key: presign.key, publicUrl: presign.publicUrl }),
       })
     } catch {
-      /* original still usable; globe falls back until thumb exists */
+      /* original still usable; globe / poster falls back until the derivative exists */
     }
   }
 

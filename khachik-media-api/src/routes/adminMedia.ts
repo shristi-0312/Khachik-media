@@ -3,7 +3,12 @@ import express, { Router } from 'express'
 import { requireAuth } from '../auth.js'
 import { prisma } from '../db.js'
 import { isMediaSection, type MediaSectionId } from '../mediaSections.js'
-import { createMediaPresignedUpload, ensureGlobeThumb, putMediaObject } from '../s3.js'
+import {
+  createMediaPresignedUpload,
+  ensureGlobeThumb,
+  ensureVideoDelivery,
+  putMediaObject,
+} from '../s3.js'
 import { serializeMedia } from '../serializeMedia.js'
 import {
   mediaBodySchema,
@@ -165,9 +170,16 @@ adminMediaRouter.post('/uploads/ensure-thumb', async (req, res) => {
     res.status(400).json({ error: 'key or publicUrl required' })
     return
   }
+  const target = `${key ?? ''} ${publicUrl ?? ''}`
+  const looksVideo = /\.(mp4|mov|webm)(\?|$)/i.test(target)
   try {
-    const result = await ensureGlobeThumb({ key, publicUrl })
-    res.json(result)
+    if (looksVideo) {
+      const poster = await ensureVideoDelivery({ key, publicUrl })
+      res.json({ thumbKey: null, thumbUrl: null, ...poster })
+      return
+    }
+    const thumb = await ensureGlobeThumb({ key, publicUrl })
+    res.json({ ...thumb, posterKey: null, posterUrl: null })
   } catch (err) {
     console.error('ensure-thumb failed', err)
     res.status(500).json({ error: 'Failed to generate thumb' })

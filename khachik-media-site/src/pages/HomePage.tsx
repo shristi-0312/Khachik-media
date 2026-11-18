@@ -9,7 +9,7 @@ import { LogoMarquee } from '../components/LogoMarquee'
 import { Wordmark } from '../components/Wordmark'
 import { ABOUT_BODY, ABOUT_HEADLINE } from '../data/content'
 import { useBasePath } from '../hooks/useBasePath'
-import { HERO_CDN_URL, HERO_FALLBACK_URL } from '../media/cdn'
+import { HERO_CDN_URL, HERO_FALLBACK_URL, HERO_POSTER_URL } from '../media/cdn'
 import styles from './HomePage.module.css'
 
 const HomeGlobe = lazy(() =>
@@ -50,6 +50,7 @@ export function HomePage() {
             loop
             playsInline
             preload="auto"
+            poster={HERO_POSTER_URL}
             aria-hidden="true"
           >
             <source src={HERO_CDN_URL} type="video/mp4" />
@@ -75,9 +76,7 @@ export function HomePage() {
         <section className={styles.about}>
           <div className={styles.aboutLeft}>
             <p className={styles.label}>About Khachik Media</p>
-            <h2 className={styles.headline}>
-              {ABOUT_HEADLINE.join('\n')}
-            </h2>
+            <h2 className={styles.headline}>{ABOUT_HEADLINE.join(' ')}</h2>
           </div>
           <div className={styles.aboutRight}>
             {ABOUT_BODY.map((paragraph) => (
