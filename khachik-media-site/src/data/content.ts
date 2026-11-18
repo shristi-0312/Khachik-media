@@ -40,13 +40,23 @@ export const CATEGORIES: { id: Category; label: string }[] = [
   { id: 'advertisements', label: 'Advertisements' },
 ]
 
-/** Figma 118:3009 / 118:3465 — Larsseit Bold 40 / 36 / -2, width 380. */
-export const ABOUT_HEADLINE =
-  'We are all about humane content & holding attention'
+/**
+ * Figma 118:3009 / 118:3465 — exact 3-line lockup.
+ * Do not let this wrap naturally; breaks are designed.
+ */
+export const ABOUT_HEADLINE = [
+  'We are all about',
+  'humane content &',
+  'holding attention',
+] as const
 
-/** Figma 118:3466 — same lockup as ABOUT_HEADLINE. */
-export const ABOUT_LOVE_HEADLINE =
-  'People with high energy who really wants to stand out'
+/** Figma 118:3466 — designed line breaks. */
+export const ABOUT_LOVE_HEADLINE = [
+  'People with high',
+  'energy who really',
+  'wants to stand',
+  'out',
+] as const
 
 /**
  * Figma 118:3007 / 118:3461 — Paper Mono 16 / -0.8 / justified, width 542.

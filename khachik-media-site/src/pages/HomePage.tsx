@@ -75,7 +75,9 @@ export function HomePage() {
         <section className={styles.about}>
           <div className={styles.aboutLeft}>
             <p className={styles.label}>About Khachik Media</p>
-            <h2 className={styles.headline}>{ABOUT_HEADLINE}</h2>
+            <h2 className={styles.headline}>
+              {ABOUT_HEADLINE.join('\n')}
+            </h2>
           </div>
           <div className={styles.aboutRight}>
             {ABOUT_BODY.map((paragraph) => (

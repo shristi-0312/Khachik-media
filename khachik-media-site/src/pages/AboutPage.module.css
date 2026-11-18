@@ -8,7 +8,7 @@
 .hero {
   position: relative;
   width: 100%;
-  height: clamp(560px, 85vh, 900px);
+  height: var(--screen-h);
   background: var(--color-red);
   overflow: hidden;
 }
@@ -67,11 +67,11 @@
   row-gap: 32px;
   padding: 168px 224px 0;
   align-items: start;
+  justify-content: center;
 }
 
 .copyLeft {
   width: 380px;
-  min-width: 0;
 }
 
 .label {
@@ -84,6 +84,11 @@
   color: var(--color-fg);
 }
 
+/*
+ * Figma 118:3465 — 40 / 36 / -2, width 380.
+ * Satoshi stand-in is ~7px wider than Larsseit, so `pre` locks the
+ * designed breaks and lets glyphs overflow into the 100px column gap.
+ */
 .headline {
   margin: 0;
   width: 380px;
@@ -95,6 +100,8 @@
   text-transform: uppercase;
   text-align: left;
   color: var(--color-fg);
+  white-space: pre;
+  overflow: visible;
 }
 
 .body {
@@ -102,8 +109,8 @@
   flex-direction: column;
   gap: 1em;
   width: 542px;
-  min-width: 0;
-  padding-top: 50px;
+  /* Figma: body top is 50px below headline top */
+  padding-top: 82px;
 }
 
 .body p {

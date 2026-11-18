@@ -43,7 +43,9 @@ export function AboutPage() {
         <section className={styles.copyBand} aria-label="About Khachik Media">
           <div className={styles.copyLeft}>
             <p className={styles.label}>About Khachik Media</p>
-            <h2 className={styles.headline}>{ABOUT_HEADLINE}</h2>
+            <h2 className={styles.headline}>
+              {ABOUT_HEADLINE.join('\n')}
+            </h2>
           </div>
           <div className={styles.body}>
             {ABOUT_BODY.map((paragraph) => (
@@ -67,7 +69,9 @@ export function AboutPage() {
         <section className={styles.copyBand} aria-label="We really love">
           <div className={styles.copyLeft}>
             <p className={styles.label}>We really love</p>
-            <h2 className={styles.headline}>{ABOUT_LOVE_HEADLINE}</h2>
+            <h2 className={styles.headline}>
+              {ABOUT_LOVE_HEADLINE.join('\n')}
+            </h2>
           </div>
           <div className={styles.body}>
             {ABOUT_BODY.map((paragraph) => (
