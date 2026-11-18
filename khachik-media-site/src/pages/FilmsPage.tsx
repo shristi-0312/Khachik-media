@@ -4,7 +4,6 @@ import { Artboard } from '../components/Artboard'
 import { ContactStrip } from '../components/ContactStrip'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
-import { LayoutToggle } from '../components/LayoutToggle'
 import { ProjectCard } from '../components/ProjectCard'
 import { VideoOverlay } from '../components/VideoOverlay'
 import { Wordmark } from '../components/Wordmark'
@@ -20,8 +19,6 @@ const SECTION_BY_CATEGORY: Record<
   promotional: 'films_promotional',
   advertisements: 'films_advertisements',
 }
-
-type LayoutMode = 'horizontal' | 'vertical'
 
 type ActiveVideo = {
   project: Project
@@ -43,12 +40,8 @@ function resolveVideoUrl(project: Project, index: number): string {
 export function FilmsPage() {
   const { projects: fallbackProjects } = useProjects()
   const [category, setCategory] = useState<Category>('short-forms')
-  /** 0 = horizontal (118:3131), 1 = vertical (118:3274) */
-  const [layoutIndex, setLayoutIndex] = useState(0)
   const [library, setLibrary] = useState<Project[] | null>(null)
   const [active, setActive] = useState<ActiveVideo | null>(null)
-
-  const layout: LayoutMode = layoutIndex === 0 ? 'horizontal' : 'vertical'
 
   useEffect(() => {
     if (!apiConfigured()) {
@@ -79,11 +72,10 @@ export function FilmsPage() {
     if (!source.length) return []
     // Prefer real library length; pad for local fallback demos.
     if (library && library.length) return source
-    const target = layout === 'vertical' ? 12 : 8
     const out: Project[] = []
-    for (let i = 0; i < target; i += 1) out.push(source[i % source.length]!)
+    for (let i = 0; i < 8; i += 1) out.push(source[i % source.length]!)
     return out
-  }, [library, fallbackProjects, category, layout])
+  }, [library, fallbackProjects, category])
 
   function onOpen(project: Project, index: number) {
     setActive({
@@ -120,23 +112,19 @@ export function FilmsPage() {
         </div>
 
         <section
-          className={`${styles.grid} ${layout === 'vertical' ? styles.gridVertical : styles.gridHorizontal}`}
+          className={`${styles.grid} ${styles.gridHorizontal}`}
           aria-label="Projects"
         >
           {items.map((project, i) => (
             <ProjectCard
-              key={`${project.slug}-${layout}-${i}`}
+              key={`${project.slug}-${i}`}
               project={project}
-              layout={layout}
+              layout="horizontal"
               frameHover
               onOpen={() => onOpen(project, i)}
             />
           ))}
         </section>
-
-        <div className={styles.pager}>
-          <LayoutToggle index={layoutIndex} count={2} onChange={setLayoutIndex} />
-        </div>
 
         <section className={styles.contactSection}>
           <ContactStrip />
@@ -149,7 +137,7 @@ export function FilmsPage() {
         <VideoOverlay
           project={active.project}
           videoUrl={active.videoUrl}
-          layout={layout}
+          layout="horizontal"
           onClose={() => setActive(null)}
         />
       ) : null}

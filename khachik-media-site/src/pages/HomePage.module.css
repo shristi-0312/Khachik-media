@@ -62,13 +62,17 @@
   padding: 28px var(--gutter) 0;
 }
 
+/* Figma Home 118:3007–3012 — static 1470 artboard lockup */
 .about {
   position: relative;
-  padding: clamp(80px, 14vw, 220px) clamp(var(--gutter), 12vw, 224px)
-    clamp(64px, 8vw, 120px);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1470px;
+  margin: 0 auto;
+  padding: 220px 224px 120px;
   display: grid;
-  grid-template-columns: minmax(220px, 380px) minmax(280px, 542px);
-  column-gap: clamp(40px, 7vw, 100px);
+  grid-template-columns: 380px 542px;
+  column-gap: 100px;
   row-gap: 40px;
   align-items: start;
   justify-content: start;
@@ -76,8 +80,8 @@
 }
 
 .aboutLeft {
+  width: 380px;
   min-width: 0;
-  padding-top: 0;
 }
 
 .label {
@@ -85,65 +89,50 @@
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: -0.7px;
+  line-height: normal;
   text-transform: uppercase;
   color: var(--color-fg);
 }
 
 .headline {
   margin: 0;
+  width: 380px;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: clamp(28px, 3.2vw, 40px);
-  line-height: 0.95;
-  letter-spacing: -0.05em;
+  font-size: 40px;
+  line-height: 36px;
+  letter-spacing: -2px;
   text-transform: uppercase;
   text-align: left;
   color: var(--color-fg);
-}
-
-.headline span {
-  display: block;
-  text-box-trim: none;
 }
 
 .aboutRight {
   display: flex;
   flex-direction: column;
-  padding-top: clamp(0px, 4vw, 82px);
+  width: 542px;
+  padding-top: 82px;
   min-width: 0;
 }
 
 .aboutRight p {
   margin: 0;
-  max-width: 542px;
+  width: 542px;
   font-family: var(--font-mono);
-  font-size: clamp(14px, 1.2vw, 16px);
-  letter-spacing: -0.05em;
-  line-height: 1.2;
+  font-size: 16px;
+  letter-spacing: -0.8px;
+  line-height: normal;
   text-transform: uppercase;
-  color: var(--color-fg);
-  text-box-trim: none;
-}
-
-.aboutRight p span {
-  display: block;
-  white-space: nowrap;
-  text-box-trim: none;
   text-align: justify;
-  text-align-last: justify;
-}
-
-.aboutRight p span:last-child {
-  text-align: left;
-  text-align-last: auto;
+  color: var(--color-fg);
 }
 
 .aboutRight p + p {
-  margin-top: 18.5px;
+  margin-top: 1em;
 }
 
 .more {
-  margin-top: clamp(28px, 4vw, 59px);
+  margin-top: 59px;
   display: inline-flex;
   align-items: flex-start;
   gap: 8px;
@@ -193,35 +182,20 @@
 }
 
 @media (max-width: 1199px) {
-  .aboutRight p span {
-    display: inline;
-    white-space: normal;
-    text-align: left;
-    text-align-last: auto;
-  }
-
-  .aboutRight p span::after {
-    content: ' ';
-  }
-}
-
-@media (max-width: 1023px) {
   .about {
+    padding: 120px var(--gutter) 80px;
     grid-template-columns: 1fr;
     justify-content: stretch;
   }
 
+  .aboutLeft,
+  .headline,
+  .aboutRight,
+  .aboutRight p {
+    width: 100%;
+  }
+
   .aboutRight {
     padding-top: 0;
-  }
-
-  .aboutRight p {
-    max-width: none;
-  }
-}
-
-@media (max-width: 719px) {
-  .headline span {
-    white-space: normal;
   }
 }

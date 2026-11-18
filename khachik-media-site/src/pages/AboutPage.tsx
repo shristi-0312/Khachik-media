@@ -6,7 +6,11 @@ import { Header } from '../components/Header'
 import { ProjectCard } from '../components/ProjectCard'
 import { Wordmark } from '../components/Wordmark'
 import { useProjects } from '../context/ProjectsContext'
-import { ABOUT_BODY, ABOUT_HEADLINE } from '../data/content'
+import {
+  ABOUT_BODY,
+  ABOUT_HEADLINE,
+  ABOUT_LOVE_HEADLINE,
+} from '../data/content'
 import { useBasePath } from '../hooks/useBasePath'
 import styles from './AboutPage.module.css'
 
@@ -39,19 +43,11 @@ export function AboutPage() {
         <section className={styles.copyBand} aria-label="About Khachik Media">
           <div className={styles.copyLeft}>
             <p className={styles.label}>About Khachik Media</p>
-            <h2 className={styles.headline}>
-              {ABOUT_HEADLINE.map((line) => (
-                <span key={line}>{line}</span>
-              ))}
-            </h2>
+            <h2 className={styles.headline}>{ABOUT_HEADLINE}</h2>
           </div>
           <div className={styles.body}>
             {ABOUT_BODY.map((paragraph) => (
-              <p key={paragraph[0]}>
-                {paragraph.map((line) => (
-                  <span key={line}>{line}</span>
-                ))}
-              </p>
+              <p key={paragraph.slice(0, 24)}>{paragraph}</p>
             ))}
           </div>
         </section>
@@ -71,20 +67,11 @@ export function AboutPage() {
         <section className={styles.copyBand} aria-label="We really love">
           <div className={styles.copyLeft}>
             <p className={styles.label}>We really love</p>
-            <h2 className={styles.headline}>
-              <span>People with high</span>
-              <span>energy who really</span>
-              <span>wants to stand</span>
-              <span>out</span>
-            </h2>
+            <h2 className={styles.headline}>{ABOUT_LOVE_HEADLINE}</h2>
           </div>
           <div className={styles.body}>
             {ABOUT_BODY.map((paragraph) => (
-              <p key={`love-${paragraph[0]}`}>
-                {paragraph.map((line) => (
-                  <span key={line}>{line}</span>
-                ))}
-              </p>
+              <p key={`love-${paragraph.slice(0, 24)}`}>{paragraph}</p>
             ))}
           </div>
         </section>

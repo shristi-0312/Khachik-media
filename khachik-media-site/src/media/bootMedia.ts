@@ -8,10 +8,10 @@ const LOCAL_GLOBE_STILLS = Array.from(
 )
 
 /** Soft ceiling so a slow link never traps visitors behind the shutter forever. */
-const MAX_BOOT_MS = 14_000
+const MAX_BOOT_MS = 4_000
 
-/** Enough buffered media (seconds) to open the site without a stall. */
-const READY_BUFFER_SECONDS = 2.5
+/** First playable chunk is enough — keep buffering after the shutter lifts. */
+const READY_BUFFER_SECONDS = 0.4
 
 type ProgressCb = (ratio: number) => void
 
@@ -47,7 +47,9 @@ function bindVideoProgress(video: HTMLVideoElement, onProgress: ProgressCb): Pro
 
     const report = () => {
       if (!video.duration || !Number.isFinite(video.duration) || video.duration <= 0) {
-        onProgress(video.readyState >= 2 ? 0.35 : 0.08)
+        onProgress(video.readyState >= 2 ? 0.45 : 0.1)
+        // First decoded frame is enough to lift — keep buffering after open.
+        if (video.readyState >= 2) finish()
         return
       }
       let end = 0
@@ -59,9 +61,11 @@ function bindVideoProgress(video: HTMLVideoElement, onProgress: ProgressCb): Pro
         /* ignore */
       }
       const byTime = end / video.duration
-      const readyEnough = end >= Math.min(READY_BUFFER_SECONDS, video.duration * 0.2)
-      onProgress(clamp01(Math.max(byTime, readyEnough ? 0.85 : byTime)))
-      if (readyEnough && video.readyState >= 3) finish()
+      const readyEnough =
+        video.readyState >= 2 ||
+        end >= Math.min(READY_BUFFER_SECONDS, video.duration * 0.08)
+      onProgress(clamp01(Math.max(byTime, readyEnough ? 0.9 : byTime)))
+      if (readyEnough) finish()
     }
 
     video.addEventListener('progress', report)
@@ -185,35 +189,32 @@ export async function bootCriticalMedia(
   const extrasTask = (async () => {
     try {
       if (kind === 'home') {
-        // Warm local tiles first (tiny), then CDN globe thumbs so the section is full on open.
+        // Warm a small local set for immediate globe paint; CDN thumbs continue after open.
+        const local = LOCAL_GLOBE_STILLS.slice(0, 8)
         let done = 0
-        const local = LOCAL_GLOBE_STILLS
         await Promise.all(
           local.map(async (url) => {
             await preloadImage(url)
             done += 1
-            extrasRatio = (done / local.length) * 0.45
+            extrasRatio = done / local.length
             publish()
           }),
         )
-        if (apiConfigured()) {
-          const items = await fetchMedia('stills')
-          const thumbs = items
-            .filter((i) => i.mediaType === 'image' && i.url)
-            .slice(0, 28)
-            .map((i) => globeTileUrl(i.url))
-          if (thumbs.length) {
-            let tDone = 0
-            await Promise.all(
-              thumbs.map(async (url) => {
-                await preloadImage(url)
-                tDone += 1
-                extrasRatio = 0.45 + (tDone / thumbs.length) * 0.55
-                publish()
-              }),
-            )
+        // Kick remaining local + CDN thumbs without blocking the shutter.
+        void (async () => {
+          await Promise.all(LOCAL_GLOBE_STILLS.slice(8).map((url) => preloadImage(url)))
+          if (!apiConfigured()) return
+          try {
+            const items = await fetchMedia('stills')
+            const thumbs = items
+              .filter((i) => i.mediaType === 'image' && i.url)
+              .slice(0, 28)
+              .map((i) => globeTileUrl(i.url))
+            await Promise.all(thumbs.map((url) => preloadImage(url)))
+          } catch {
+            /* non-blocking warm */
           }
-        }
+        })()
         extrasRatio = 1
         publish()
         return
@@ -227,7 +228,7 @@ export async function bootCriticalMedia(
 
       if (kind === 'stills') {
         const items = await fetchMedia('stills')
-        const urls = items.map((i) => i.url).filter(Boolean).slice(0, 6)
+        const urls = items.map((i) => i.url).filter(Boolean).slice(0, 3)
         if (!urls.length) {
           extrasRatio = 1
           publish()
@@ -244,7 +245,7 @@ export async function bootCriticalMedia(
         )
       } else {
         const items = await fetchMedia('films_short_forms')
-        const urls = items.map((i) => i.url).filter(Boolean).slice(0, 4)
+        const urls = items.map((i) => i.url).filter(Boolean).slice(0, 2)
         if (!urls.length) {
           extrasRatio = 1
           publish()

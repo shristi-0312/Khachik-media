@@ -92,35 +92,15 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   column-gap: 12px;
   row-gap: 40px;
-  margin-bottom: 50px;
-}
-
-.gridVertical {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  column-gap: 13px;
-  row-gap: 40px;
-  margin-bottom: 50px;
-}
-
-.pager {
-  display: flex;
-  justify-content: center;
-  margin: 0 0 clamp(80px, 12vw, 200px);
+  margin-bottom: clamp(80px, 12vw, 200px);
 }
 
 .contactSection {
   margin: 0 var(--gutter) 50px;
 }
 
-@media (max-width: 1023px) {
-  .gridVertical {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 719px) {
-  .gridHorizontal,
-  .gridVertical {
+  .gridHorizontal {
     grid-template-columns: 1fr;
     row-gap: 32px;
   }

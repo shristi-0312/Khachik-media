@@ -55,16 +55,22 @@
   text-transform: uppercase;
 }
 
+/* Figma About Us 118:3461–3466 — static 1470 artboard lockup */
 .copyBand {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1470px;
+  margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(220px, 380px) minmax(280px, 542px);
-  column-gap: clamp(40px, 7vw, 100px);
+  grid-template-columns: 380px 542px;
+  column-gap: 100px;
   row-gap: 32px;
-  padding: clamp(64px, 10vw, 168px) clamp(var(--gutter), 12vw, 224px) 0;
+  padding: 168px 224px 0;
   align-items: start;
 }
 
 .copyLeft {
+  width: 380px;
   min-width: 0;
 }
 
@@ -73,57 +79,43 @@
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: -0.7px;
+  line-height: normal;
   text-transform: uppercase;
   color: var(--color-fg);
 }
 
 .headline {
   margin: 0;
+  width: 380px;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: clamp(28px, 3.2vw, 40px);
-  line-height: 0.95;
-  letter-spacing: -0.05em;
+  font-size: 40px;
+  line-height: 36px;
+  letter-spacing: -2px;
   text-transform: uppercase;
   text-align: left;
   color: var(--color-fg);
-}
-
-.headline span {
-  display: block;
-  text-box-trim: none;
 }
 
 .body {
   display: flex;
   flex-direction: column;
-  gap: 18.5px;
+  gap: 1em;
+  width: 542px;
   min-width: 0;
-  padding-top: clamp(0px, 3vw, 50px);
+  padding-top: 50px;
 }
 
 .body p {
   margin: 0;
+  width: 542px;
   font-family: var(--font-mono);
-  font-size: clamp(14px, 1.2vw, 16px);
-  letter-spacing: -0.05em;
-  line-height: 1.2;
+  font-size: 16px;
+  letter-spacing: -0.8px;
+  line-height: normal;
   text-transform: uppercase;
-  color: var(--color-fg);
-  text-box-trim: none;
-}
-
-.body p span {
-  display: block;
-  white-space: nowrap;
-  text-box-trim: none;
   text-align: justify;
-  text-align-last: justify;
-}
-
-.body p span:last-child {
-  text-align: left;
-  text-align-last: auto;
+  color: var(--color-fg);
 }
 
 .mediaGrid {
@@ -201,21 +193,16 @@
 }
 
 @media (max-width: 1199px) {
-  .body p span {
-    display: inline;
-    white-space: normal;
-    text-align: left;
-    text-align-last: auto;
-  }
-
-  .body p span::after {
-    content: ' ';
-  }
-}
-
-@media (max-width: 1023px) {
   .copyBand {
+    padding: 80px var(--gutter) 0;
     grid-template-columns: 1fr;
+  }
+
+  .copyLeft,
+  .headline,
+  .body,
+  .body p {
+    width: 100%;
   }
 
   .body {
@@ -232,9 +219,5 @@
   .play {
     width: 64px;
     height: 64px;
-  }
-
-  .headline span {
-    white-space: normal;
   }
 }

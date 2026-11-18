@@ -40,41 +40,23 @@ export const CATEGORIES: { id: Category; label: string }[] = [
   { id: 'advertisements', label: 'Advertisements' },
 ]
 
-/** Figma 118:3009 — three lines inside the 380px lockup. */
-export const ABOUT_HEADLINE = [
-  'We are all about',
-  'humane content &',
-  'holding attention',
-]
+/** Figma 118:3009 / 118:3465 — Larsseit Bold 40 / 36 / -2, width 380. */
+export const ABOUT_HEADLINE =
+  'We are all about humane content & holding attention'
+
+/** Figma 118:3466 — same lockup as ABOUT_HEADLINE. */
+export const ABOUT_LOVE_HEADLINE =
+  'People with high energy who really wants to stand out'
 
 /**
- * Figma 118:3007 — Paper Mono 16 / -5% / justified, 542px.
- * Each paragraph is the designed line breaks. The last line stays flush left.
+ * Figma 118:3007 / 118:3461 — Paper Mono 16 / -0.8 / justified, width 542.
+ * Natural wrap only — do not force per-line breaks.
  */
-export const ABOUT_BODY: string[][] = [
-  [
-    'Khachik Media is a production house for corporate events,',
-    'artist events and short-form content. We help brands turn',
-    'moments into stories their audience remembers and shares.',
-  ],
-  [
-    'Our edge is how we work on the ground. We know how to put',
-    'people at ease, from CEOs and performers to the crowd and',
-    'the people around them. The result is footage that feels',
-    'natural, warm and real, not staged. And because we’ve built',
-    'our own audience online, every edit is shaped to hold',
-    'attention from the first second.',
-  ],
-  [
-    'Brands like Bluorng, Puma, New Balance, Pepsi Sri Lanka,',
-    'Swiggy and Snitch, along with artists like Samay Raina, have',
-    'trusted us to capture their biggest moments.',
-  ],
-  [
-    'Whether it’s a launch, a live show or a content series, we',
-    'bring the same promise: stories with heart, built to',
-    'perform.',
-  ],
+export const ABOUT_BODY: string[] = [
+  'Khachik Media is a production house for corporate events, artist events and short-form content. We help brands turn moments into stories their audience remembers and shares.',
+  'Our edge is how we work on the ground. We know how to put people at ease, from CEOs and performers to the crowd and the people around them. The result is footage that feels natural, warm and real, not staged. And because we’ve built our own audience online, every edit is shaped to hold attention from the first second.',
+  'Brands like Bluorng, Puma, New Balance, Pepsi Sri Lanka, Swiggy and Snitch, along with artists like Samay Raina, have trusted us to capture their biggest moments.',
+  'Whether it’s a launch, a live show or a content series, we bring the same promise: stories with heart, built to perform.',
 ]
 
 export const PROJECTS: Project[] = [

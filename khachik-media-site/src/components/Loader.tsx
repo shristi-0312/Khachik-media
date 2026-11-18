@@ -23,10 +23,10 @@ const WIDTH_START = 120
 const WIDTH_END = 219
 const FRAME_H = 86
 
-const COUNT_MS = 2000
-const CROSSFADE_MS = 560
-const BRAND_HOLD_MS = 480
-const EXIT_MS = 700
+const COUNT_MS = 900
+const CROSSFADE_MS = 280
+const BRAND_HOLD_MS = 120
+const EXIT_MS = 400
 
 function easeInOutCubic(t: number) {
   return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2

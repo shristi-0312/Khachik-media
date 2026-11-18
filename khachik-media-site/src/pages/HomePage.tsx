@@ -75,19 +75,11 @@ export function HomePage() {
         <section className={styles.about}>
           <div className={styles.aboutLeft}>
             <p className={styles.label}>About Khachik Media</p>
-            <h2 className={styles.headline}>
-              {ABOUT_HEADLINE.map((line) => (
-                <span key={line}>{line}</span>
-              ))}
-            </h2>
+            <h2 className={styles.headline}>{ABOUT_HEADLINE}</h2>
           </div>
           <div className={styles.aboutRight}>
             {ABOUT_BODY.map((paragraph) => (
-              <p key={paragraph[0]}>
-                {paragraph.map((line) => (
-                  <span key={line}>{line}</span>
-                ))}
-              </p>
+              <p key={paragraph.slice(0, 24)}>{paragraph}</p>
             ))}
             <Link to={`${base}/about`} className={styles.more}>
               <span>More about us</span>
