@@ -86,6 +86,15 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  transition: opacity 180ms ease;
+}
+
+.tile img.pending {
+  opacity: 0;
+}
+
+.tile img.shown {
+  opacity: 1;
 }
 
 .bottom {

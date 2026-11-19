@@ -131,11 +131,31 @@
   gap: 12px;
 }
 
-.mediaRed {
+.mediaRed,
+.mediaTile {
   position: relative;
   aspect-ratio: 701 / 394;
   background: var(--color-red);
   overflow: hidden;
+  border: none;
+  padding: 0;
+  display: block;
+  width: 100%;
+  color: inherit;
+}
+
+button.mediaTile {
+  cursor: pointer;
+  font: inherit;
+}
+
+.mediaAsset {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .play {
@@ -152,6 +172,7 @@
   justify-content: center;
   padding: 10px 10px 10px 14px;
   box-sizing: border-box;
+  pointer-events: none;
 }
 
 .divider {

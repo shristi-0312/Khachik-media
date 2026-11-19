@@ -4,6 +4,8 @@ import { Artboard } from '../components/Artboard'
 import { ContactStrip } from '../components/ContactStrip'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
+import { stillThumbUrl } from '../media/cdn'
+import { stillIsWarm, warmStills } from '../media/stillCache'
 import styles from './StillsPage.module.css'
 
 /** Tile spans in a 12-col masonry (desktop composition from Figma 143:4740). */
@@ -39,6 +41,7 @@ const INTRO =
 
 export function StillsPage() {
   const [urls, setUrls] = useState<string[]>([])
+  const [ready, setReady] = useState<Record<string, true>>({})
 
   useEffect(() => {
     if (!apiConfigured()) return
@@ -46,7 +49,26 @@ export function StillsPage() {
     void (async () => {
       try {
         const items = await fetchMedia('stills')
-        if (!cancelled) setUrls(items.map((i) => i.url))
+        if (cancelled) return
+        // Grid uses CDN thumbs (~720px), never multi-MB camera originals.
+        const thumbs = items
+          .filter((i) => i.mediaType === 'image' && i.url)
+          .map((i) => stillThumbUrl(i.url))
+        setUrls(thumbs)
+
+        const already: Record<string, true> = {}
+        for (const url of thumbs) {
+          if (stillIsWarm(url)) already[url] = true
+        }
+        if (Object.keys(already).length) setReady(already)
+
+        // Warm any thumbs the loader did not finish (client nav / cold boot timeout).
+        void warmStills(thumbs).then(() => {
+          if (cancelled) return
+          const next: Record<string, true> = {}
+          for (const url of thumbs) next[url] = true
+          setReady(next)
+        })
       } catch {
         /* keep empty tiles */
       }
@@ -72,6 +94,7 @@ export function StillsPage() {
         <section className={styles.masonry} aria-label="Still photography">
           {TILES.map((tile, i) => {
             const src = urls.length ? urls[i % urls.length] : null
+            const isReady = src ? Boolean(ready[src]) : false
             return (
               <div
                 key={i}
@@ -81,9 +104,21 @@ export function StillsPage() {
                   <img
                     src={src}
                     alt=""
-                    loading={i < 4 ? 'eager' : 'lazy'}
+                    // Eager once warmed — avoids Chrome discarding lazy bitmaps on scroll-away.
+                    loading={i < 8 || isReady ? 'eager' : 'lazy'}
                     fetchPriority={i < 2 ? 'high' : i < 4 ? 'auto' : 'low'}
                     decoding="async"
+                    className={isReady ? styles.shown : styles.pending}
+                    onLoad={() => {
+                      setReady((prev) => (prev[src] ? prev : { ...prev, [src]: true }))
+                    }}
+                    ref={(el) => {
+                      // Cached images can complete before onLoad binds.
+                      if (!el || isReady) return
+                      if (el.complete && el.naturalWidth > 0) {
+                        setReady((prev) => (prev[src] ? prev : { ...prev, [src]: true }))
+                      }
+                    }}
                   />
                 ) : null}
               </div>

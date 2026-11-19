@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { apiConfigured, fetchMedia, mediaToProject, type ApiMediaItem } from '../api/client'
 import { Artboard } from '../components/Artboard'
 import { ContactStrip } from '../components/ContactStrip'
 import { Footer } from '../components/Footer'
@@ -15,9 +16,11 @@ import {
   type Project,
 } from '../data/content'
 import { useBasePath } from '../hooks/useBasePath'
+import { stillThumbUrl, videoPosterUrl } from '../media/cdn'
 import styles from './AboutPage.module.css'
 
 const WORK_COVERS = ['/media/hq/h1.mp4', '/media/hq/h2.mp4'] as const
+const FEATURED_SLOTS = 6
 
 type ActiveVideo = {
   project: Project
@@ -36,15 +39,98 @@ function resolveVideoUrl(project: Project, index: number): string {
   return WORK_COVERS[index % WORK_COVERS.length]!
 }
 
+function FeaturedTile({
+  item,
+  onOpenVideo,
+}: {
+  item: ApiMediaItem | null
+  onOpenVideo: (item: ApiMediaItem) => void
+}) {
+  if (!item) {
+    return <div className={styles.mediaRed} aria-hidden="true" />
+  }
+
+  const isVideo = item.mediaType === 'video' || /\.(mp4|webm|mov)(\?|$)/i.test(item.url)
+
+  if (isVideo) {
+    return (
+      <button
+        type="button"
+        className={styles.mediaTile}
+        onClick={() => onOpenVideo(item)}
+        aria-label={item.title ? `Play ${item.title}` : 'Play video'}
+      >
+        <video
+          className={styles.mediaAsset}
+          src={item.url}
+          poster={videoPosterUrl(item.url) ?? undefined}
+          muted
+          playsInline
+          preload="metadata"
+          aria-hidden="true"
+        />
+        <div className={styles.play}>
+          <img src="/assets/play.svg" alt="" width={22} height={24} />
+        </div>
+      </button>
+    )
+  }
+
+  return (
+    <div className={styles.mediaTile}>
+      <img
+        className={styles.mediaAsset}
+        src={stillThumbUrl(item.url)}
+        alt={item.title || ''}
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
+  )
+}
+
 export function AboutPage() {
   const base = useBasePath()
   const { projects } = useProjects()
   const [active, setActive] = useState<ActiveVideo | null>(null)
+  const [featured, setFeatured] = useState<ApiMediaItem[]>([])
+
+  useEffect(() => {
+    if (!apiConfigured()) return
+    let cancelled = false
+    void (async () => {
+      try {
+        const items = await fetchMedia('about')
+        if (!cancelled) {
+          setFeatured(items.filter((i) => i.published !== false && Boolean(i.url)))
+        }
+      } catch {
+        if (!cancelled) setFeatured([])
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const work = projects.slice(0, 2).map((project, i) => ({
     ...project,
     coverUrl: project.coverUrl ?? WORK_COVERS[i] ?? WORK_COVERS[0],
     coverType: project.coverUrl ? project.coverType : ('video' as const),
   }))
+
+  const tiles: Array<ApiMediaItem | null> = Array.from({ length: FEATURED_SLOTS }, (_, i) => {
+    return featured[i] ?? null
+  })
+  // If more than 6 uploads, show them all in the same 2-col grid.
+  const gridItems = featured.length > FEATURED_SLOTS ? featured : tiles
+
+  function openFeaturedVideo(item: ApiMediaItem) {
+    setActive({
+      project: mediaToProject(item),
+      videoUrl: item.url,
+    })
+  }
 
   return (
     <Artboard>
@@ -74,14 +160,12 @@ export function AboutPage() {
         </section>
 
         <section className={styles.mediaGrid} aria-label="Featured media">
-          {Array.from({ length: 6 }, (_, i) => (
-            <div key={i} className={styles.mediaRed}>
-              {i < 2 ? (
-                <div className={styles.play}>
-                  <img src="/assets/play.svg" alt="" width={22} height={24} />
-                </div>
-              ) : null}
-            </div>
+          {gridItems.map((item, i) => (
+            <FeaturedTile
+              key={item?.id ?? `empty-${i}`}
+              item={item}
+              onOpenVideo={openFeaturedVideo}
+            />
           ))}
         </section>
 

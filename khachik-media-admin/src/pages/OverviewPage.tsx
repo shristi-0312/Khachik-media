@@ -66,7 +66,7 @@ export function OverviewPage() {
             <article className="stat-card">
               <p className="stat-label">Sections</p>
               <p className="stat-value">{ALL_SECTIONS.length}</p>
-              <p className="stat-meta">Films · Stills · Globe</p>
+              <p className="stat-meta">Films · Stills · Globe · About</p>
             </article>
           </div>
 
@@ -104,6 +104,9 @@ export function OverviewPage() {
                 </Link>
                 <Link className="button secondary" to="/globe">
                   Globe — HQ horizontal & vertical clips
+                </Link>
+                <Link className="button secondary" to="/about">
+                  About — featured stills & videos
                 </Link>
               </div>
               <p className="hint" style={{ marginTop: 16 }}>

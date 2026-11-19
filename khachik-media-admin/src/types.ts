@@ -8,10 +8,13 @@ export const GLOBE_SECTIONS = [
   { id: 'globe_vertical', label: 'Vertical clips' },
 ] as const
 
+export const ABOUT_SECTIONS = [{ id: 'about', label: 'About grid' }] as const
+
 export const ALL_SECTIONS = [
   ...FILMS_SECTIONS,
   { id: 'stills', label: 'Stills' },
   ...GLOBE_SECTIONS,
+  ...ABOUT_SECTIONS,
 ] as const
 
 export type MediaSectionId = (typeof ALL_SECTIONS)[number]['id']

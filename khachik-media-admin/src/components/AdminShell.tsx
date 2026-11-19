@@ -18,6 +18,10 @@ const TITLES: Record<string, { title: string; subtitle: string }> = {
     title: 'Globe',
     subtitle: 'High-quality clips for the home sphere',
   },
+  '/about': {
+    title: 'About',
+    subtitle: 'Featured stills & videos for the About page',
+  },
 }
 
 export function AdminShell() {
@@ -54,6 +58,10 @@ export function AdminShell() {
           <NavLink to="/globe" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
             <GlobeIcon />
             <span className="nav-label">Globe</span>
+          </NavLink>
+          <NavLink to="/about" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+            <AboutIcon />
+            <span className="nav-label">About</span>
           </NavLink>
         </nav>
 
@@ -122,6 +130,15 @@ function GlobeIcon() {
     <svg className="nav-ico" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.6" />
       <path d="M4 12h16M12 4c2.5 2.8 2.5 13.2 0 16M12 4c-2.5 2.8-2.5 13.2 0 16" stroke="currentColor" strokeWidth="1.6" />
+    </svg>
+  )
+}
+
+function AboutIcon() {
+  return (
+    <svg className="nav-ico" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M7 9h10M7 13h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   )
 }

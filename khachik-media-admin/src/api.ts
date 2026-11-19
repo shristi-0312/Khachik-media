@@ -8,6 +8,7 @@ export type MediaSectionId =
   | 'stills'
   | 'globe_horizontal'
   | 'globe_vertical'
+  | 'about'
 
 export type MediaItem = {
   id: string

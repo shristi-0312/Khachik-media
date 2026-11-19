@@ -1,5 +1,6 @@
 import { apiConfigured, fetchMedia } from '../api/client'
-import { globeTileUrl, HERO_CDN_URL, HERO_FALLBACK_URL } from './cdn'
+import { globeTileUrl, HERO_CDN_URL, HERO_FALLBACK_URL, stillThumbUrl } from './cdn'
+import { warmStill, warmStills } from './stillCache'
 
 /** Local lightweight stills — paint the sphere before CDN thumbs arrive. */
 const LOCAL_GLOBE_STILLS = Array.from(
@@ -126,6 +127,10 @@ function preloadVideo(url: string, onProgress: ProgressCb): Promise<void> {
 }
 
 function preloadImage(url: string): Promise<void> {
+  // Prefer the shared still cache so StillsPage can reuse decoded thumbs.
+  if (url.includes('/stills/') || url.includes('/thumbs/')) {
+    return warmStill(url)
+  }
   return new Promise((resolve) => {
     const img = new Image()
     img.decoding = 'async'
@@ -134,6 +139,9 @@ function preloadImage(url: string): Promise<void> {
     img.src = url
   })
 }
+
+/** Above-fold + near-fold tiles for the Stills masonry (matches TILES length). */
+const STILLS_BOOT_COUNT = 24
 
 function routeKind(pathname: string): 'home' | 'films' | 'stills' | 'other' {
   const path = pathname.replace(/\/dark(?=\/|$)/, '') || '/'
@@ -206,11 +214,14 @@ export async function bootCriticalMedia(
           if (!apiConfigured()) return
           try {
             const items = await fetchMedia('stills')
+            // Warm the same CloudFront thumb URLs the Stills grid uses (not /cf proxy).
             const thumbs = items
               .filter((i) => i.mediaType === 'image' && i.url)
               .slice(0, 28)
-              .map((i) => globeTileUrl(i.url))
-            await Promise.all(thumbs.map((url) => preloadImage(url)))
+              .map((i) => stillThumbUrl(i.url))
+            await warmStills(thumbs)
+            // Globe WebGL still needs same-origin /cf tiles — warm those too.
+            void Promise.all(thumbs.map((url) => preloadImage(globeTileUrl(url))))
           } catch {
             /* non-blocking warm */
           }
@@ -220,8 +231,37 @@ export async function bootCriticalMedia(
         return
       }
 
-      // Films and Stills paint from posters and in-view loads. Do not
-      // hold the shutter on full-quality downloads.
+      if (kind === 'stills') {
+        // Use the 0→100 shutter window to warm CDN thumbs (not multi-MB originals).
+        let thumbs: string[] = []
+        if (apiConfigured()) {
+          try {
+            const items = await fetchMedia('stills')
+            thumbs = items
+              .filter((i) => i.mediaType === 'image' && i.url)
+              .map((i) => stillThumbUrl(i.url))
+          } catch {
+            thumbs = []
+          }
+        }
+        if (!thumbs.length) {
+          thumbs = LOCAL_GLOBE_STILLS.slice(0, STILLS_BOOT_COUNT)
+        }
+        const priority = thumbs.slice(0, STILLS_BOOT_COUNT)
+        await warmStills(priority, (done, total) => {
+          extrasRatio = done / Math.max(1, total)
+          publish()
+        })
+        // Any remaining library thumbs continue after the shutter lifts.
+        if (thumbs.length > STILLS_BOOT_COUNT) {
+          void warmStills(thumbs.slice(STILLS_BOOT_COUNT))
+        }
+        extrasRatio = 1
+        publish()
+        return
+      }
+
+      // Films paint from posters and in-view loads — do not hold the shutter.
       extrasRatio = 1
       publish()
     } catch {

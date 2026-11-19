@@ -46,25 +46,33 @@ export function globeMediaUrl(url: string): string {
 }
 
 /**
- * Map a full-res library still to its CDN globe tile:
+ * Map a full-res library still to its CDN thumb:
  * `media/{section}/{id}.ext` → `media/{section}/thumbs/{id}.jpg`
- * (generated on upload / backfill — ~50–150KB vs multi-MB originals).
+ * (~50–150KB vs multi-MB originals). Keeps the CloudFront URL — safe for <img>.
  */
-export function globeTileUrl(url: string): string {
+export function stillThumbUrl(url: string): string {
   if (!url) return url
   try {
     const parsed = new URL(url, typeof window !== 'undefined' ? window.location.origin : 'http://localhost')
     const path = parsed.pathname
-    if (path.includes('/thumbs/')) return globeMediaUrl(url)
+    if (path.includes('/thumbs/')) return parsed.toString()
 
     const m = path.match(/^(\/media\/[^/]+)\/([^/]+)$/)
     if (m) {
       const base = m[2]!.replace(/\.[^.]+$/, '.jpg')
       parsed.pathname = `${m[1]}/thumbs/${base}`
-      return globeMediaUrl(parsed.toString())
+      return parsed.toString()
     }
   } catch {
     /* keep original */
   }
-  return globeMediaUrl(url)
+  return url
+}
+
+/**
+ * Same thumb as stillThumbUrl, but same-origin `/cf/...` for WebGL textures
+ * (CloudFront often omits CORS ACAO for canvas).
+ */
+export function globeTileUrl(url: string): string {
+  return globeMediaUrl(stillThumbUrl(url))
 }

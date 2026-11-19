@@ -51,6 +51,7 @@ const mediaSection = z.enum([
   'stills',
   'globe_horizontal',
   'globe_vertical',
+  'about',
 ])
 
 export const mediaPresignSchema = z.object({

@@ -71,7 +71,7 @@ model GalleryItem {
   @@unique([projectId, slot])
 }
 
-/** Site media library — Films / Stills / Globe HQ (original files via CloudFront). */
+/** Site media library — Films / Stills / Globe / About (original files via CloudFront). */
 enum MediaSection {
   films_short_forms
   films_promotional
@@ -79,6 +79,7 @@ enum MediaSection {
   stills
   globe_horizontal
   globe_vertical
+  about
 }
 
 model MediaItem {
