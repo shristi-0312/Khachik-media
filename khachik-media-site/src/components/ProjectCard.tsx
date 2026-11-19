@@ -30,70 +30,55 @@ function CoverMedia({
     (project.coverType === 'video' ||
       /\.(mp4|webm|mov)(\?|$)/i.test(project.coverUrl ?? ''))
 
-  // Warm the first frame when the tile is near the viewport; stay paused.
+  const poster =
+    project.posterUrl ||
+    (project.coverUrl ? videoPosterUrl(project.coverUrl) : null) ||
+    undefined
+
+  // Only attach / preload the full MP4 once the visitor hovers (or plays).
   useEffect(() => {
     const video = videoRef.current
-    if (!video || !isVideo) return
+    if (!video || !isVideo || !playing || !project.coverUrl) return
 
-    const warm = () => {
-      if (video.preload !== 'auto') {
-        video.preload = 'auto'
-        video.load()
-      }
+    if (video.src !== project.coverUrl) {
+      video.src = project.coverUrl
+      video.preload = 'auto'
+      video.load()
     }
+    void video.play().catch(() => {})
 
-    const paintFrame = () => {
-      if (playing) return
-      video.pause()
-      // Tiny seek forces a painted poster frame in Safari/Chrome.
-      if (video.currentTime < 0.05) video.currentTime = 0.001
-    }
-
-    video.addEventListener('loadeddata', paintFrame)
-
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) warm()
-      },
-      { rootMargin: '160px 0px', threshold: 0.01 },
-    )
-    io.observe(video)
     return () => {
-      io.disconnect()
-      video.removeEventListener('loadeddata', paintFrame)
+      video.pause()
+      if (video.readyState >= 2) video.currentTime = 0
     }
-  }, [isVideo, playing, project.coverUrl])
-
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video || !isVideo) return
-
-    if (playing) {
-      if (video.preload !== 'auto') {
-        video.preload = 'auto'
-        video.load()
-      }
-      void video.play().catch(() => {})
-      return
-    }
-
-    video.pause()
-    if (video.readyState >= 2) video.currentTime = 0
   }, [playing, isVideo, project.coverUrl])
 
-  if (!project.coverUrl) return null
+  if (!project.coverUrl && !poster) return null
 
   if (isVideo) {
+    // Idle: poster image only — zero MP4 bytes until hover/play.
+    if (!playing) {
+      if (!poster) return null
+      return (
+        <img
+          className={styles.coverMedia}
+          src={poster}
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
+      )
+    }
+
     return (
       <video
         ref={videoRef}
         className={styles.coverMedia}
-        src={project.coverUrl}
-        poster={videoPosterUrl(project.coverUrl ?? '') ?? undefined}
+        poster={poster}
         muted
         loop
         playsInline
-        preload="none"
+        preload="auto"
         aria-hidden="true"
       />
     )
@@ -102,7 +87,7 @@ function CoverMedia({
   return (
     <img
       className={styles.coverMedia}
-      src={project.coverUrl}
+      src={project.coverUrl!}
       alt=""
       loading="lazy"
       decoding="async"

@@ -1,0 +1,25 @@
+---
+description: Media quality USP and CDN delivery constraints — never sacrifice on-screen quality for speed
+alwaysApply: true
+---
+
+# Media quality (golden rule)
+
+**Quality is the USP.** Khachik Media sells top-notch imagery and film. Delivery work must never make on-screen media look softer, flatter, or more compressed than a sharp retina presentation of the master.
+
+## Non-negotiables
+
+- **Originals stay sacred.** Camera masters and full-quality film/hero files remain on CloudFront unchanged. Do not re-encode masters for “smaller files.”
+- **Grids never load multi-MB still originals.** Use high-quality CDN derivatives (long-edge ~1600, WebP/AVIF/JPEG at high quality). Globe WebGL may keep a separate smaller tile for texture budget.
+- **Visuals are locked** unless the user explicitly asks for design work. No layout, typography, color, spacing, or loading-UI redesign (no new blur-up skins, skeletons, or spinner chrome).
+- **Speed work is plumbing only:** URLs, derivatives, formats, preload/boot, Cache-Control, API fields (`thumbUrl`, `posterUrl`, `srcset`).
+
+## Delivery pattern
+
+LQIP/loading chrome is out of scope while visuals are locked. Prefer: earlier byte start → HQ responsive AVIF/WebP/JPEG via CloudFront → original video only on play.
+
+## When changing thumbs or posters
+
+- Prefer upgrading derivative sharpness over shrinking quality settings.
+- Keep JPEG fallbacks for older browsers.
+- Backfill existing library assets when the pipeline changes.

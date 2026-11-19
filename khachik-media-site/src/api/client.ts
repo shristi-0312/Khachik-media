@@ -91,13 +91,27 @@ export type MediaSectionId =
   | 'globe_vertical'
   | 'about'
 
+export type ApiMediaSrcSet = {
+  avif: string
+  webp: string
+  jpg: string
+}
+
 export type ApiMediaItem = {
   id: string
   section: MediaSectionId
   title: string
   dateLabel: string
   mediaType: 'image' | 'video'
+  /** Original master — play / lightbox only. */
   url: string
+  /** HQ display still (1600 JPEG). */
+  thumbUrl?: string | null
+  /** Video first-frame poster. */
+  posterUrl?: string | null
+  /** Globe / WebGL 720 JPEG. */
+  globeThumbUrl?: string | null
+  srcset?: ApiMediaSrcSet | null
   published: boolean
   sortOrder: number
 }
@@ -122,6 +136,7 @@ export function mediaToProject(item: ApiMediaItem): Project {
     description: [],
     coverUrl: item.url,
     coverType: item.mediaType,
+    posterUrl: item.posterUrl ?? null,
     heroUrl: item.url,
     heroType: item.mediaType,
   }

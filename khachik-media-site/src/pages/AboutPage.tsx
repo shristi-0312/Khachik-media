@@ -16,7 +16,8 @@ import {
   type Project,
 } from '../data/content'
 import { useBasePath } from '../hooks/useBasePath'
-import { stillThumbUrl, videoPosterUrl } from '../media/cdn'
+import { ResponsiveStill } from '../components/ResponsiveStill'
+import { videoPosterUrl } from '../media/cdn'
 import styles from './AboutPage.module.css'
 
 const WORK_COVERS = ['/media/hq/h1.mp4', '/media/hq/h2.mp4'] as const
@@ -53,6 +54,7 @@ function FeaturedTile({
   const isVideo = item.mediaType === 'video' || /\.(mp4|webm|mov)(\?|$)/i.test(item.url)
 
   if (isVideo) {
+    const poster = item.posterUrl || videoPosterUrl(item.url) || undefined
     return (
       <button
         type="button"
@@ -60,15 +62,19 @@ function FeaturedTile({
         onClick={() => onOpenVideo(item)}
         aria-label={item.title ? `Play ${item.title}` : 'Play video'}
       >
-        <video
-          className={styles.mediaAsset}
-          src={item.url}
-          poster={videoPosterUrl(item.url) ?? undefined}
-          muted
-          playsInline
-          preload="metadata"
-          aria-hidden="true"
-        />
+        {/* Poster-first: no MP4 bytes until the visitor opens the overlay. */}
+        {poster ? (
+          <img className={styles.mediaAsset} src={poster} alt="" loading="lazy" decoding="async" />
+        ) : (
+          <video
+            className={styles.mediaAsset}
+            src={item.url}
+            muted
+            playsInline
+            preload="metadata"
+            aria-hidden="true"
+          />
+        )}
         <div className={styles.play}>
           <img src="/assets/play.svg" alt="" width={22} height={24} />
         </div>
@@ -78,12 +84,14 @@ function FeaturedTile({
 
   return (
     <div className={styles.mediaTile}>
-      <img
-        className={styles.mediaAsset}
-        src={stillThumbUrl(item.url)}
+      <ResponsiveStill
+        url={item.url}
+        thumbUrl={item.thumbUrl}
+        srcset={item.srcset}
         alt={item.title || ''}
+        className={styles.mediaAsset}
+        sizes="(max-width: 719px) 100vw, 50vw"
         loading="lazy"
-        decoding="async"
       />
     </div>
   )

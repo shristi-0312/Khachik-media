@@ -28,6 +28,8 @@ export type Project = {
   /** Optional — filled when loaded from the admin API / CDN. */
   coverUrl?: string | null
   coverType?: MediaType | null
+  /** Video card idle frame — prefer over loading the full MP4. */
+  posterUrl?: string | null
   heroUrl?: string | null
   heroType?: MediaType | null
   gallery?: GalleryItem[]

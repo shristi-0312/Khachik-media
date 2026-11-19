@@ -81,6 +81,14 @@
   aspect-ratio: 345 / 460;
 }
 
+.tile picture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 .tile img {
   width: 100%;
   height: 100%;

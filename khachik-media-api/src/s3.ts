@@ -10,7 +10,7 @@ import { config } from './config.js'
 import type { MediaSectionId } from './mediaSections.js'
 import {
   isImageContentType,
-  makeGlobeThumb,
+  makeAllStillDerivatives,
   thumbKeyFor,
 } from './thumbs.js'
 import {
@@ -77,18 +77,21 @@ async function putObject(key: string, body: Buffer, contentType: string) {
   )
 }
 
-/** Write a small JPEG tile next to the original for globe / grid use. */
+/**
+ * Write globe 720 JPEG + HQ responsive grid derivatives (480/960/1600 × AVIF/WebP/JPEG).
+ * Returns the legacy globe thumb key for upload response compatibility.
+ */
 async function putGlobeThumbFromBuffer(originalKey: string, buffer: Buffer): Promise<string | null> {
-  const thumbKey = thumbKeyFor(originalKey)
-  if (!thumbKey) return null
+  if (!thumbKeyFor(originalKey)) return null
   try {
-    const thumb = await makeGlobeThumb(buffer)
-    // Always store thumbs as .jpg under the same basename (may differ from png/webp source).
-    const jpegKey = thumbKey.replace(/\.[^.]+$/, '.jpg')
-    await putObject(jpegKey, thumb, 'image/jpeg')
-    return jpegKey
+    const { globeKey, globeBody, grid } = await makeAllStillDerivatives(originalKey, buffer)
+    if (globeKey && globeBody) {
+      await putObject(globeKey, globeBody, 'image/jpeg')
+    }
+    await Promise.all(grid.map((d) => putObject(d.key, d.body, d.contentType)))
+    return globeKey
   } catch (err) {
-    console.error('globe thumb failed', originalKey, err)
+    console.error('still derivatives failed', originalKey, err)
     return null
   }
 }

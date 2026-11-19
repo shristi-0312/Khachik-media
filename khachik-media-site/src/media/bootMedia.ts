@@ -1,5 +1,12 @@
 import { apiConfigured, fetchMedia } from '../api/client'
-import { globeTileUrl, HERO_CDN_URL, HERO_FALLBACK_URL, stillThumbUrl } from './cdn'
+import {
+  globeTileUrl,
+  HERO_CDN_URL,
+  HERO_FALLBACK_URL,
+  HERO_POSTER_URL,
+  stillDisplayUrl,
+  videoPosterUrl,
+} from './cdn'
 import { warmStill, warmStills } from './stillCache'
 
 /** Local lightweight stills — paint the sphere before CDN thumbs arrive. */
@@ -13,6 +20,12 @@ const MAX_BOOT_MS = 4_000
 
 /** First playable chunk is enough — keep buffering after the shutter lifts. */
 const READY_BUFFER_SECONDS = 0.4
+
+/** Above-fold only — rest warm after the shutter lifts. */
+const STILLS_BOOT_COUNT = 8
+const HOME_GLOBE_WARM = 8
+const FILMS_POSTER_WARM = 4
+const ABOUT_FEATURED_WARM = 6
 
 type ProgressCb = (ratio: number) => void
 
@@ -49,7 +62,6 @@ function bindVideoProgress(video: HTMLVideoElement, onProgress: ProgressCb): Pro
     const report = () => {
       if (!video.duration || !Number.isFinite(video.duration) || video.duration <= 0) {
         onProgress(video.readyState >= 2 ? 0.45 : 0.1)
-        // First decoded frame is enough to lift — keep buffering after open.
         if (video.readyState >= 2) finish()
         return
       }
@@ -79,17 +91,12 @@ function bindVideoProgress(video: HTMLVideoElement, onProgress: ProgressCb): Pro
   })
 }
 
-/**
- * Prefer the visible hero <video> for the hero CDN URL so we do not download
- * the same file twice. Other URLs use a short-lived warmer element.
- */
 function preloadVideo(url: string, onProgress: ProgressCb): Promise<void> {
   const isHero = url === HERO_CDN_URL || url === HERO_FALLBACK_URL
   if (isHero) {
     const existing = document.querySelector<HTMLVideoElement>('[data-boot-video="hero"]')
     if (existing) {
       existing.preload = 'auto'
-      // Kick playback/buffering without resetting an in-flight download.
       void existing.play().catch(() => {})
       return bindVideoProgress(existing, onProgress)
     }
@@ -127,8 +134,7 @@ function preloadVideo(url: string, onProgress: ProgressCb): Promise<void> {
 }
 
 function preloadImage(url: string): Promise<void> {
-  // Prefer the shared still cache so StillsPage can reuse decoded thumbs.
-  if (url.includes('/stills/') || url.includes('/thumbs/')) {
+  if (url.includes('/stills/') || url.includes('/thumbs/') || url.includes('/posters/')) {
     return warmStill(url)
   }
   return new Promise((resolve) => {
@@ -140,15 +146,17 @@ function preloadImage(url: string): Promise<void> {
   })
 }
 
-/** Above-fold + near-fold tiles for the Stills masonry (matches TILES length). */
-const STILLS_BOOT_COUNT = 24
-
-function routeKind(pathname: string): 'home' | 'films' | 'stills' | 'other' {
+function routeKind(pathname: string): 'home' | 'films' | 'stills' | 'about' | 'other' {
   const path = pathname.replace(/\/dark(?=\/|$)/, '') || '/'
   if (path === '/' || path === '') return 'home'
   if (path.startsWith('/films')) return 'films'
   if (path.startsWith('/stills')) return 'stills'
+  if (path.startsWith('/about')) return 'about'
   return 'other'
+}
+
+function displayThumb(item: { url: string; thumbUrl?: string | null }): string {
+  return item.thumbUrl || stillDisplayUrl(item.url)
 }
 
 /**
@@ -167,20 +175,22 @@ export async function bootCriticalMedia(
     const ratio =
       kind === 'home'
         ? heroRatio * 0.85 + extrasRatio * 0.15
-        : kind === 'other'
-          ? heroRatio
-          : heroRatio * 0.25 + extrasRatio * 0.75
+        : kind === 'stills' || kind === 'films' || kind === 'about'
+          ? heroRatio * 0.15 + extrasRatio * 0.85
+          : heroRatio
     onProgress(clamp01(ratio))
   }
 
   const heroTask = (async () => {
-    if (kind !== 'home' && kind !== 'other') {
+    // Only the home hero needs the full reel during boot.
+    if (kind !== 'home') {
       heroRatio = 1
       publish()
       return
     }
-    // Wait a frame so HomePage can mount the hero under the shutter.
     await new Promise<void>((r) => requestAnimationFrame(() => r()))
+    // Poster first (tiny), then first playable chunk of the hero MP4.
+    void preloadImage(HERO_POSTER_URL)
     await preloadVideo(HERO_CDN_URL, (r) => {
       heroRatio = r
       publish()
@@ -197,8 +207,7 @@ export async function bootCriticalMedia(
   const extrasTask = (async () => {
     try {
       if (kind === 'home') {
-        // Warm a small local set for immediate globe paint; CDN thumbs continue after open.
-        const local = LOCAL_GLOBE_STILLS.slice(0, 8)
+        const local = LOCAL_GLOBE_STILLS.slice(0, HOME_GLOBE_WARM)
         let done = 0
         await Promise.all(
           local.map(async (url) => {
@@ -208,22 +217,19 @@ export async function bootCriticalMedia(
             publish()
           }),
         )
-        // Kick remaining local + CDN thumbs without blocking the shutter.
+        // After open: more local tiles + one set of CF globe tiles (not dual CF+/cf).
         void (async () => {
-          await Promise.all(LOCAL_GLOBE_STILLS.slice(8).map((url) => preloadImage(url)))
+          await Promise.all(LOCAL_GLOBE_STILLS.slice(HOME_GLOBE_WARM).map((url) => preloadImage(url)))
           if (!apiConfigured()) return
           try {
             const items = await fetchMedia('stills')
-            // Warm the same CloudFront thumb URLs the Stills grid uses (not /cf proxy).
-            const thumbs = items
+            const globeTiles = items
               .filter((i) => i.mediaType === 'image' && i.url)
-              .slice(0, 28)
-              .map((i) => stillThumbUrl(i.url))
-            await warmStills(thumbs)
-            // Globe WebGL still needs same-origin /cf tiles — warm those too.
-            void Promise.all(thumbs.map((url) => preloadImage(globeTileUrl(url))))
+              .slice(0, HOME_GLOBE_WARM)
+              .map((i) => globeTileUrl(i.globeThumbUrl || i.url))
+            await warmStills(globeTiles)
           } catch {
-            /* non-blocking warm */
+            /* non-blocking */
           }
         })()
         extrasRatio = 1
@@ -232,14 +238,13 @@ export async function bootCriticalMedia(
       }
 
       if (kind === 'stills') {
-        // Use the 0→100 shutter window to warm CDN thumbs (not multi-MB originals).
         let thumbs: string[] = []
         if (apiConfigured()) {
           try {
             const items = await fetchMedia('stills')
             thumbs = items
               .filter((i) => i.mediaType === 'image' && i.url)
-              .map((i) => stillThumbUrl(i.url))
+              .map(displayThumb)
           } catch {
             thumbs = []
           }
@@ -252,7 +257,6 @@ export async function bootCriticalMedia(
           extrasRatio = done / Math.max(1, total)
           publish()
         })
-        // Any remaining library thumbs continue after the shutter lifts.
         if (thumbs.length > STILLS_BOOT_COUNT) {
           void warmStills(thumbs.slice(STILLS_BOOT_COUNT))
         }
@@ -261,7 +265,53 @@ export async function bootCriticalMedia(
         return
       }
 
-      // Films paint from posters and in-view loads — do not hold the shutter.
+      if (kind === 'films') {
+        if (apiConfigured()) {
+          try {
+            const short = await fetchMedia('films_short_forms')
+            const posters = short
+              .filter((i) => i.mediaType === 'video' && i.url)
+              .slice(0, FILMS_POSTER_WARM)
+              .map((i) => i.posterUrl || videoPosterUrl(i.url))
+              .filter((u): u is string => Boolean(u))
+            await warmStills(posters, (done, total) => {
+              extrasRatio = done / Math.max(1, total)
+              publish()
+            })
+          } catch {
+            /* ignore */
+          }
+        }
+        extrasRatio = 1
+        publish()
+        return
+      }
+
+      if (kind === 'about') {
+        if (apiConfigured()) {
+          try {
+            const items = await fetchMedia('about')
+            const urls: string[] = []
+            for (const i of items.slice(0, ABOUT_FEATURED_WARM)) {
+              if (i.mediaType === 'image' && i.url) urls.push(displayThumb(i))
+              else if (i.mediaType === 'video') {
+                const p = i.posterUrl || videoPosterUrl(i.url)
+                if (p) urls.push(p)
+              }
+            }
+            await warmStills(urls, (done, total) => {
+              extrasRatio = done / Math.max(1, total)
+              publish()
+            })
+          } catch {
+            /* ignore */
+          }
+        }
+        extrasRatio = 1
+        publish()
+        return
+      }
+
       extrasRatio = 1
       publish()
     } catch {

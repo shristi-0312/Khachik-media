@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { apiConfigured, fetchMedia } from '../api/client'
+import { apiConfigured, fetchMedia, type ApiMediaItem } from '../api/client'
 import { Artboard } from '../components/Artboard'
 import { ContactStrip } from '../components/ContactStrip'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
-import { stillThumbUrl } from '../media/cdn'
+import { ResponsiveStill } from '../components/ResponsiveStill'
+import { preloadStillLinks, stillDisplayUrl } from '../media/cdn'
 import { stillIsWarm, warmStills } from '../media/stillCache'
 import styles from './StillsPage.module.css'
 
@@ -39,34 +40,38 @@ const TILES: { span: 1 | 2; tall?: boolean }[] = [
 const INTRO =
   'Khachik Media is a production house for corporate events, artist events and short-form content. We help brands turn moments into stories their audience remembers and shares.'
 
+function displayKey(item: ApiMediaItem): string {
+  return item.thumbUrl || stillDisplayUrl(item.url)
+}
+
 export function StillsPage() {
-  const [urls, setUrls] = useState<string[]>([])
+  const [items, setItems] = useState<ApiMediaItem[]>([])
   const [ready, setReady] = useState<Record<string, true>>({})
 
   useEffect(() => {
     if (!apiConfigured()) return
     let cancelled = false
+    let removePreloads = () => {}
     void (async () => {
       try {
-        const items = await fetchMedia('stills')
+        const data = await fetchMedia('stills')
         if (cancelled) return
-        // Grid uses CDN thumbs (~720px), never multi-MB camera originals.
-        const thumbs = items
-          .filter((i) => i.mediaType === 'image' && i.url)
-          .map((i) => stillThumbUrl(i.url))
-        setUrls(thumbs)
+        const images = data.filter((i) => i.mediaType === 'image' && i.url)
+        setItems(images)
+
+        const keys = images.map(displayKey)
+        removePreloads = preloadStillLinks(keys, 4)
 
         const already: Record<string, true> = {}
-        for (const url of thumbs) {
-          if (stillIsWarm(url)) already[url] = true
+        for (const key of keys) {
+          if (stillIsWarm(key)) already[key] = true
         }
         if (Object.keys(already).length) setReady(already)
 
-        // Warm any thumbs the loader did not finish (client nav / cold boot timeout).
-        void warmStills(thumbs).then(() => {
+        void warmStills(keys).then(() => {
           if (cancelled) return
           const next: Record<string, true> = {}
-          for (const url of thumbs) next[url] = true
+          for (const key of keys) next[key] = true
           setReady(next)
         })
       } catch {
@@ -75,6 +80,7 @@ export function StillsPage() {
     })()
     return () => {
       cancelled = true
+      removePreloads()
     }
   }, [])
 
@@ -93,30 +99,34 @@ export function StillsPage() {
 
         <section className={styles.masonry} aria-label="Still photography">
           {TILES.map((tile, i) => {
-            const src = urls.length ? urls[i % urls.length] : null
-            const isReady = src ? Boolean(ready[src]) : false
+            const item = items.length ? items[i % items.length]! : null
+            const key = item ? displayKey(item) : null
+            const isReady = key ? Boolean(ready[key]) : false
+            const sizes =
+              tile.span === 2
+                ? '(max-width: 719px) 100vw, (max-width: 1023px) 100vw, 50vw'
+                : '(max-width: 719px) 100vw, (max-width: 1023px) 50vw, 25vw'
             return (
               <div
                 key={i}
                 className={`${styles.tile} ${tile.span === 2 ? styles.wide : ''} ${tile.tall ? styles.tall : ''}`}
               >
-                {src ? (
-                  <img
-                    src={src}
-                    alt=""
-                    // Eager once warmed — avoids Chrome discarding lazy bitmaps on scroll-away.
+                {item && key ? (
+                  <ResponsiveStill
+                    url={item.url}
+                    thumbUrl={item.thumbUrl}
+                    srcset={item.srcset}
+                    sizes={sizes}
                     loading={i < 8 || isReady ? 'eager' : 'lazy'}
                     fetchPriority={i < 2 ? 'high' : i < 4 ? 'auto' : 'low'}
-                    decoding="async"
                     className={isReady ? styles.shown : styles.pending}
                     onLoad={() => {
-                      setReady((prev) => (prev[src] ? prev : { ...prev, [src]: true }))
+                      setReady((prev) => (prev[key] ? prev : { ...prev, [key]: true }))
                     }}
-                    ref={(el) => {
-                      // Cached images can complete before onLoad binds.
+                    imgRef={(el) => {
                       if (!el || isReady) return
                       if (el.complete && el.naturalWidth > 0) {
-                        setReady((prev) => (prev[src] ? prev : { ...prev, [src]: true }))
+                        setReady((prev) => (prev[key] ? prev : { ...prev, [key]: true }))
                       }
                     }}
                   />

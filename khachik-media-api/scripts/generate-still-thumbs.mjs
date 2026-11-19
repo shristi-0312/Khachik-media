@@ -1,14 +1,18 @@
 #!/usr/bin/env node
 /**
- * Backfill globe tiles for existing stills:
- * media/stills/{id}.jpg → media/stills/thumbs/{id}.jpg (~720px JPEG)
+ * Backfill still derivatives:
+ *  - media/{section}/thumbs/{id}.jpg          (720 globe / WebGL)
+ *  - media/{section}/thumbs/{id}-{480|960|1600}.{avif,webp,jpg}  (HQ grid)
  *
- * Usage (from repo root or api folder, with infra/.env loaded):
+ * Usage:
  *   node scripts/generate-still-thumbs.mjs
  *   node scripts/generate-still-thumbs.mjs --limit 20
+ *   node scripts/generate-still-thumbs.mjs --force
+ *   node scripts/generate-still-thumbs.mjs --prefix media/about/
  */
 import {
   GetObjectCommand,
+  HeadObjectCommand,
   ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
@@ -41,10 +45,22 @@ if (!BUCKET) {
   process.exit(1)
 }
 
+const FORCE = process.argv.includes('--force')
 const limitArg = process.argv.find((a) => a.startsWith('--limit'))
 const LIMIT = limitArg
   ? Number(limitArg.includes('=') ? limitArg.split('=')[1] : process.argv[process.argv.indexOf(limitArg) + 1])
   : Infinity
+const prefixArg = process.argv.find((a) => a.startsWith('--prefix'))
+const PREFIX = prefixArg
+  ? (prefixArg.includes('=') ? prefixArg.split('=')[1] : process.argv[process.argv.indexOf(prefixArg) + 1])
+  : 'media/stills/'
+
+const EDGES = [480, 960, 1600]
+const FORMATS = [
+  { ext: 'avif', type: 'image/avif', quality: 80 },
+  { ext: 'webp', type: 'image/webp', quality: 90 },
+  { ext: 'jpg', type: 'image/jpeg', quality: 90 },
+]
 
 const client = new S3Client({
   region: REGION,
@@ -57,7 +73,6 @@ const client = new S3Client({
       : undefined,
 })
 
-const PREFIX = 'media/stills/'
 const CACHE = 'public, max-age=31536000, immutable'
 
 async function listKeys() {
@@ -74,7 +89,7 @@ async function listKeys() {
     for (const obj of out.Contents ?? []) {
       const key = obj.Key
       if (!key || key.endsWith('/')) continue
-      if (key.includes('/thumbs/')) continue
+      if (key.includes('/thumbs/') || key.includes('/posters/')) continue
       if (!/\.(jpe?g|png|webp)$/i.test(key)) continue
       keys.push(key)
     }
@@ -91,45 +106,88 @@ async function bodyToBuffer(body) {
   return Buffer.concat(chunks)
 }
 
+async function exists(key) {
+  try {
+    await client.send(new HeadObjectCommand({ Bucket: BUCKET, Key: key }))
+    return true
+  } catch {
+    return false
+  }
+}
+
+async function put(key, body, contentType) {
+  await client.send(
+    new PutObjectCommand({
+      Bucket: BUCKET,
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+      CacheControl: CACHE,
+    }),
+  )
+}
+
+function stemFor(originalKey) {
+  const m = originalKey.match(/^(media\/[^/]+)\/([^/]+)$/)
+  if (!m) return null
+  const base = m[2].replace(/\.[^.]+$/, '')
+  return `${m[1]}/thumbs/${base}`
+}
+
 async function main() {
   const keys = await listKeys()
-  console.log(`Found ${keys.length} stills in s3://${BUCKET}/${PREFIX}`)
+  console.log(`Found ${keys.length} images in s3://${BUCKET}/${PREFIX}`)
   let done = 0
   let skipped = 0
   for (const key of keys) {
     if (done >= LIMIT) break
-    const base = path.basename(key).replace(/\.[^.]+$/, '.jpg')
-    const thumbKey = `${PREFIX}thumbs/${base}`
+    const stem = stemFor(key)
+    if (!stem) continue
 
-    try {
-      await client.send(new GetObjectCommand({ Bucket: BUCKET, Key: thumbKey }))
-      skipped += 1
-      continue
-    } catch {
-      /* missing — generate */
+    const globeKey = `${stem}.jpg`
+    const needed = [globeKey]
+    for (const edge of EDGES) {
+      for (const f of FORMATS) needed.push(`${stem}-${edge}.${f.ext}`)
+    }
+
+    if (!FORCE) {
+      const missing = []
+      for (const k of needed) {
+        if (!(await exists(k))) missing.push(k)
+      }
+      if (!missing.length) {
+        skipped += 1
+        continue
+      }
     }
 
     const got = await client.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }))
     const buf = await bodyToBuffer(got.Body)
-    const thumb = await sharp(buf)
+
+    const globe = await sharp(buf)
       .rotate()
       .resize({ width: 720, height: 720, fit: 'inside', withoutEnlargement: true })
       .jpeg({ quality: 72, mozjpeg: true })
       .toBuffer()
+    await put(globeKey, globe, 'image/jpeg')
 
-    await client.send(
-      new PutObjectCommand({
-        Bucket: BUCKET,
-        Key: thumbKey,
-        Body: thumb,
-        ContentType: 'image/jpeg',
-        CacheControl: CACHE,
-      }),
-    )
+    for (const edge of EDGES) {
+      const resized = sharp(buf)
+        .rotate()
+        .resize({ width: edge, height: edge, fit: 'inside', withoutEnlargement: true })
+      for (const f of FORMATS) {
+        let out
+        if (f.ext === 'avif') out = await resized.clone().avif({ quality: f.quality }).toBuffer()
+        else if (f.ext === 'webp') out = await resized.clone().webp({ quality: f.quality }).toBuffer()
+        else out = await resized.clone().jpeg({ quality: f.quality, mozjpeg: true }).toBuffer()
+        await put(`${stem}-${edge}.${f.ext}`, out, f.type)
+      }
+    }
+
     done += 1
-    console.log(`✓ ${thumbKey} (${Math.round(thumb.length / 1024)}KB) from ${key}`)
+    console.log(`✓ ${stem}-* (+ globe) from ${key}`)
   }
-  console.log(`Done. created=${done} already_present=${skipped}`)
+  console.log(`Done. created=${done} already_complete=${skipped}`)
 }
 
 main().catch((err) => {

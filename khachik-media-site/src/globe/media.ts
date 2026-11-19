@@ -41,7 +41,8 @@ export function fromLibrary(items: ApiMediaItem[]): FieldMedia[] {
     .map((i) => ({
       id: i.id,
       kind: 'image',
-      src: globeTileUrl(i.url),
+      // Prefer API globeThumbUrl (720) when present; never the multi-MB original.
+      src: globeTileUrl(i.globeThumbUrl || i.url),
       label: named(i.title, 'Stills'),
       page: 'stills',
     }))
