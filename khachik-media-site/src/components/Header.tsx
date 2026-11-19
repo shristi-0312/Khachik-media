@@ -76,7 +76,7 @@ export function Header({ variant = 'glass', active = null, onClose }: Props) {
           ))}
         </nav>
         <button type="button" className={styles.cta} onClick={onCta}>
-          {onClose ? 'Close' : 'Meri bhi video banado'}
+          {onClose ? 'Close' : 'CAN WE WORK TOGETHER 👉👈'}
         </button>
       </div>
       <button

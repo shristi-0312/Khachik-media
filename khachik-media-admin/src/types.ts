@@ -1,7 +1,6 @@
 export const FILMS_SECTIONS = [
-  { id: 'films_short_forms', label: 'Short-forms' },
-  { id: 'films_promotional', label: 'Promotional Events' },
-  { id: 'films_advertisements', label: 'Advertisements' },
+  { id: 'films_short_forms', label: 'Socials' },
+  { id: 'films_promotional', label: 'Promo Events' },
 ] as const
 
 export const GLOBE_SECTIONS = [

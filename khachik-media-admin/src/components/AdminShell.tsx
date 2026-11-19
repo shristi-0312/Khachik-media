@@ -8,7 +8,7 @@ const TITLES: Record<string, { title: string; subtitle: string }> = {
   },
   '/films': {
     title: 'Films',
-    subtitle: 'Short-forms · Promotional · Advertisements',
+    subtitle: 'Socials · Promo Events',
   },
   '/stills': {
     title: 'Stills',

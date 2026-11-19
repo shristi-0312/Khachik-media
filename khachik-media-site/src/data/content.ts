@@ -33,11 +33,10 @@ export type Project = {
   gallery?: GalleryItem[]
 }
 
-/** Films filters — Short-forms / Promotional / Advertisements. */
+/** Films filters — Socials / Promo Events. */
 export const CATEGORIES: { id: Category; label: string }[] = [
-  { id: 'short-forms', label: 'Short-forms' },
-  { id: 'promotional', label: 'Promotional Events' },
-  { id: 'advertisements', label: 'Advertisements' },
+  { id: 'short-forms', label: 'Socials' },
+  { id: 'promotional', label: 'Promo Events' },
 ]
 
 /**

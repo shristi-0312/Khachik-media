@@ -138,7 +138,7 @@ export function ContactModal() {
                 width={6}
                 height={11}
               />
-              <span>Meri bhi video banadao</span>
+              <span>CAN WE WORK TOGETHER 👉👈</span>
               <span className={styles.chevronRight}>
                 <img
                   src="/assets/btn-chevron-right.svg"

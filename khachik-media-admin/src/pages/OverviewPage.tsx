@@ -97,7 +97,7 @@ export function OverviewPage() {
               </div>
               <div className="stack">
                 <Link className="button secondary" to="/films">
-                  Films — Short-forms, Promotional, Ads
+                  Films — Socials, Promo Events
                 </Link>
                 <Link className="button secondary" to="/stills">
                   Stills — photography grid

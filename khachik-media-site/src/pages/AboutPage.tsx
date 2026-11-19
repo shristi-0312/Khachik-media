@@ -1,24 +1,45 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Artboard } from '../components/Artboard'
 import { ContactStrip } from '../components/ContactStrip'
 import { Footer } from '../components/Footer'
 import { Header } from '../components/Header'
 import { ProjectCard } from '../components/ProjectCard'
+import { VideoOverlay } from '../components/VideoOverlay'
 import { Wordmark } from '../components/Wordmark'
 import { useProjects } from '../context/ProjectsContext'
 import {
   ABOUT_BODY,
   ABOUT_HEADLINE,
   ABOUT_LOVE_HEADLINE,
+  type Project,
 } from '../data/content'
 import { useBasePath } from '../hooks/useBasePath'
 import styles from './AboutPage.module.css'
 
 const WORK_COVERS = ['/media/hq/h1.mp4', '/media/hq/h2.mp4'] as const
 
+type ActiveVideo = {
+  project: Project
+  videoUrl: string
+}
+
+function resolveVideoUrl(project: Project, index: number): string {
+  const hero = project.heroUrl
+  if (hero && (project.heroType === 'video' || /\.(mp4|webm|mov)(\?|$)/i.test(hero))) {
+    return hero
+  }
+  const cover = project.coverUrl
+  if (cover && (project.coverType === 'video' || /\.(mp4|webm|mov)(\?|$)/i.test(cover))) {
+    return cover
+  }
+  return WORK_COVERS[index % WORK_COVERS.length]!
+}
+
 export function AboutPage() {
   const base = useBasePath()
   const { projects } = useProjects()
+  const [active, setActive] = useState<ActiveVideo | null>(null)
   const work = projects.slice(0, 2).map((project, i) => ({
     ...project,
     coverUrl: project.coverUrl ?? WORK_COVERS[i] ?? WORK_COVERS[0],
@@ -98,6 +119,12 @@ export function AboutPage() {
               project={project}
               layout="horizontal"
               showPlay
+              onOpen={() =>
+                setActive({
+                  project,
+                  videoUrl: resolveVideoUrl(project, i),
+                })
+              }
             />
           ))}
         </section>
@@ -110,6 +137,15 @@ export function AboutPage() {
           <Footer />
         </div>
       </div>
+
+      {active ? (
+        <VideoOverlay
+          project={active.project}
+          videoUrl={active.videoUrl}
+          layout="horizontal"
+          onClose={() => setActive(null)}
+        />
+      ) : null}
     </Artboard>
   )
 }

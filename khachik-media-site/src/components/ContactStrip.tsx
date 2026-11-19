@@ -43,7 +43,7 @@ export function ContactStrip() {
       </label>
       <button type="submit" className={styles.submit}>
         <img src="/assets/btn-chevron-left.svg" alt="" width={6} height={11} />
-        <span>Meri bhi video banadao</span>
+        <span>CAN WE WORK TOGETHER 👉👈</span>
         <span className={styles.chevronRight}>
           <img src="/assets/btn-chevron-right.svg" alt="" width={6} height={11} />
         </span>

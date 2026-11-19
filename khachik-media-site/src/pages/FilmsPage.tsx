@@ -12,12 +12,11 @@ import { CATEGORIES, type Category, type Project } from '../data/content'
 import styles from './FilmsPage.module.css'
 
 const SECTION_BY_CATEGORY: Record<
-  Category,
-  'films_short_forms' | 'films_promotional' | 'films_advertisements'
+  'short-forms' | 'promotional',
+  'films_short_forms' | 'films_promotional'
 > = {
   'short-forms': 'films_short_forms',
   promotional: 'films_promotional',
-  advertisements: 'films_advertisements',
 }
 
 type ActiveVideo = {
@@ -51,7 +50,12 @@ export function FilmsPage() {
     let cancelled = false
     void (async () => {
       try {
-        const section = SECTION_BY_CATEGORY[category]
+        const section =
+          SECTION_BY_CATEGORY[category as keyof typeof SECTION_BY_CATEGORY]
+        if (!section) {
+          if (!cancelled) setLibrary([])
+          return
+        }
         const items = await fetchMedia(section)
         if (cancelled) return
         setLibrary(items.map(mediaToProject))
