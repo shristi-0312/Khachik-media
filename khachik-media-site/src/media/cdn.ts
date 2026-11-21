@@ -15,10 +15,12 @@ export function videoPosterUrl(url: string): string | null {
     const m = parsed.pathname.match(/^(\/media\/[^/]+)\/([^/]+)\.(mp4|mov|webm)$/i)
     if (!m) return null
     parsed.pathname = `${m[1]}/posters/${m[2]}.jpg`
+    // Bust immutable CloudFront 403s cached before posters were backfilled.
+    parsed.searchParams.set('v', '2')
     if (parsed.hostname === CLOUDFRONT_HOST || parsed.hostname.endsWith('.cloudfront.net')) {
       return parsed.toString()
     }
-    return parsed.pathname
+    return `${parsed.pathname}${parsed.search}`
   } catch {
     return null
   }

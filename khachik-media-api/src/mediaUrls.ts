@@ -90,5 +90,6 @@ export function derivePosterUrl(originalUrl: string): string | null {
   if (!key) return null
   const posterKey = posterKeyFor(key)
   if (!posterKey) return null
-  return toPublicUrl(posterKey)
+  // Query bustes immutable CloudFront 403s cached while posters were missing.
+  return `${toPublicUrl(posterKey)}?v=2`
 }
