@@ -42,8 +42,9 @@ if [ ! -f .env ]; then
 fi
 npm ci
 npm run build
-# Preserve /admin while syncing site assets to nginx root
-sudo rsync -a --delete --exclude admin/ dist/ /var/www/html/
+# Live nginx roots the public SPA at /var/www/html/site (admin stays at /admin/)
+sudo mkdir -p /var/www/html/site
+sudo rsync -a --delete dist/ /var/www/html/site/
 
 sudo nginx -t && sudo systemctl reload nginx
 
