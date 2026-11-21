@@ -19,3 +19,4 @@ __pycache__/
 # Large local hero masters (served from CloudFront in production)
 khachik-media-site/hero video.mp4
 khachik-media-site/public/media/hero.mp4
+.vercel
