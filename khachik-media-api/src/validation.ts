@@ -9,6 +9,13 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 })
 
+export const contactSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  phone: z.string().trim().min(5).max(40),
+  message: z.string().trim().max(5000).optional().default(''),
+  source: z.string().trim().max(64).optional(),
+})
+
 export const galleryItemSchema = z.object({
   slot: gallerySlot,
   mediaType,

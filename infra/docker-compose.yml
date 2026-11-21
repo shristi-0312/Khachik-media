@@ -33,6 +33,9 @@ services:
       CLOUDFRONT_URL: ${CLOUDFRONT_URL}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      CONTACT_TO_EMAIL: ${CONTACT_TO_EMAIL:-contact@khachikmedia.com}
+      CONTACT_FROM_EMAIL: ${CONTACT_FROM_EMAIL:-Khachik Media <noreply@khachikmedia.com>}
     ports:
       - '4000:4000'
 

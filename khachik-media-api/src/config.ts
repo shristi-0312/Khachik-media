@@ -24,4 +24,11 @@ export const config = {
   awsRegion: process.env.AWS_REGION ?? 'ap-south-1',
   s3Bucket: process.env.S3_BUCKET ?? 'khachik-media-assets',
   cloudfrontUrl: (process.env.CLOUDFRONT_URL ?? '').replace(/\/$/, ''),
+  /** Resend API key — required for contact form delivery */
+  resendApiKey: (process.env.RESEND_API_KEY ?? '').trim(),
+  contactToEmail: (process.env.CONTACT_TO_EMAIL ?? 'contact@khachikmedia.com').trim(),
+  /** Must use a Resend-verified domain (e.g. noreply@khachikmedia.com). */
+  contactFromEmail: (
+    process.env.CONTACT_FROM_EMAIL ?? 'Khachik Media <noreply@khachikmedia.com>'
+  ).trim(),
 }

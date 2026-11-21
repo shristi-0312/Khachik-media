@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useLocation } from 'react-router-dom'
+import { submitContact } from '../api/client'
 import { TESTIMONIALS } from '../data/content'
 import { useContact } from '../context/ContactContext'
 import { Header } from './Header'
@@ -13,6 +14,8 @@ export function ContactModal() {
   const [message, setMessage] = useState('')
   const [agreed, setAgreed] = useState(true)
   const [index, setIndex] = useState(0)
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     closeContact()
@@ -35,9 +38,27 @@ export function ContactModal() {
 
   const t = TESTIMONIALS[index % TESTIMONIALS.length]
 
-  function onSubmit(e: FormEvent) {
+  async function onSubmit(e: FormEvent) {
     e.preventDefault()
-    closeContact()
+    if (!agreed || sending) return
+    setSending(true)
+    setError('')
+    try {
+      await submitContact({
+        name,
+        phone,
+        message,
+        source: 'contact-modal',
+      })
+      setName('')
+      setPhone('')
+      setMessage('')
+      closeContact()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send')
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
@@ -131,7 +152,7 @@ export function ContactModal() {
                 rows={5}
               />
             </label>
-            <button type="submit" className={styles.submit}>
+            <button type="submit" className={styles.submit} disabled={sending || !agreed}>
               <img
                 src="/assets/btn-chevron-left.svg"
                 alt=""
@@ -148,6 +169,11 @@ export function ContactModal() {
                 />
               </span>
             </button>
+            {error ? (
+              <p className={styles.statusError} role="alert">
+                {error}
+              </p>
+            ) : null}
             <label className={styles.consent}>
               <button
                 type="button"

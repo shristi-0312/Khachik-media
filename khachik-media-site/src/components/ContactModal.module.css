@@ -220,6 +220,14 @@
   transform: scaleY(-1) rotate(180deg);
 }
 
+.statusError {
+  margin: 12px 0 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-red);
+}
+
 .consent {
   display: flex;
   align-items: flex-start;

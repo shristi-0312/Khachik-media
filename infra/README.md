@@ -66,7 +66,8 @@ sudo chown ec2-user:ec2-user /opt/khachik-media
 git clone <your-repo-url> /opt/khachik-media
 cd /opt/khachik-media/infra
 cp .env.example .env
-# edit .env with JWT, admin password, S3, CloudFront, CORS, PUBLIC_API_URL
+# edit .env with JWT, admin password, S3, CloudFront, CORS, PUBLIC_API_URL,
+# and Resend (RESEND_API_KEY, CONTACT_TO_EMAIL=contact@khachikmedia.com)
 docker compose up -d --build
 ```
 

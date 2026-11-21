@@ -92,6 +92,15 @@
   transform: scaleY(-1) rotate(180deg);
 }
 
+.statusError {
+  flex: 1 1 100%;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-red);
+}
+
 @media (max-width: 1023px) {
   .form {
     gap: 20px;

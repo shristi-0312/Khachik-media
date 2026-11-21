@@ -5,6 +5,7 @@ import { config } from './config.js'
 import { adminRouter } from './routes/admin.js'
 import { adminMediaRouter } from './routes/adminMedia.js'
 import { authRouter } from './routes/auth.js'
+import { contactRouter } from './routes/contact.js'
 import { publicMediaRouter } from './routes/media.js'
 import { publicProjectsRouter } from './routes/projects.js'
 
@@ -31,6 +32,7 @@ app.get('/health', (_req, res) => {
 })
 
 app.use('/auth', authRouter)
+app.use('/contact', contactRouter)
 app.use('/projects', publicProjectsRouter)
 app.use('/media', publicMediaRouter)
 app.use('/admin', adminMediaRouter)

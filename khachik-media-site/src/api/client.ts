@@ -150,4 +150,30 @@ export async function fetchMedia(section?: MediaSectionId): Promise<ApiMediaItem
   return (await res.json()) as ApiMediaItem[]
 }
 
+export type ContactPayload = {
+  name: string
+  phone: string
+  message?: string
+  source?: string
+}
+
+export async function submitContact(payload: ContactPayload): Promise<void> {
+  if (!API_URL) throw new Error('API is not configured')
+  const res = await fetch(`${API_URL}/contact`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    let detail = `Failed to send (${res.status})`
+    try {
+      const body = (await res.json()) as { error?: string }
+      if (body.error) detail = body.error
+    } catch {
+      /* ignore */
+    }
+    throw new Error(detail)
+  }
+}
+
 export { API_URL }
