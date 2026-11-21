@@ -17,6 +17,7 @@ import {
 } from '../data/content'
 import { useBasePath } from '../hooks/useBasePath'
 import { ResponsiveStill } from '../components/ResponsiveStill'
+import { VideoCover } from '../components/VideoCover'
 import { videoPosterUrl } from '../media/cdn'
 import styles from './AboutPage.module.css'
 
@@ -62,19 +63,13 @@ function FeaturedTile({
         onClick={() => onOpenVideo(item)}
         aria-label={item.title ? `Play ${item.title}` : 'Play video'}
       >
-        {/* Poster-first: no MP4 bytes until the visitor opens the overlay. */}
-        {poster ? (
-          <img className={styles.mediaAsset} src={poster} alt="" loading="lazy" decoding="async" />
-        ) : (
-          <video
-            className={styles.mediaAsset}
-            src={item.url}
-            muted
-            playsInline
-            preload="metadata"
-            aria-hidden="true"
-          />
-        )}
+        {/* Poster-first; VideoCover falls back to a metadata frame if poster 403/404s. */}
+        <VideoCover
+          videoUrl={item.url}
+          posterUrl={poster}
+          className={styles.mediaAsset}
+          playing={false}
+        />
         <div className={styles.play}>
           <img src="/assets/play.svg" alt="" width={22} height={24} />
         </div>

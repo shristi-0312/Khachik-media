@@ -1,9 +1,16 @@
 import type { GalleryItem, Project } from '@prisma/client'
+import { derivePosterUrl } from './mediaUrls.js'
 import { CATEGORY_API_MAP, SLOT_API_MAP, type PublicProject } from './types.js'
 
 type ProjectWithGallery = Project & { gallery: GalleryItem[] }
 
 export function serializeProject(project: ProjectWithGallery): PublicProject {
+  const coverIsVideo =
+    project.coverType === 'video' ||
+    Boolean(project.coverUrl && /\.(mp4|mov|webm)(\?|$)/i.test(project.coverUrl))
+  const posterUrl =
+    coverIsVideo && project.coverUrl ? derivePosterUrl(project.coverUrl) : null
+
   return {
     id: project.id,
     slug: project.slug,
@@ -18,6 +25,7 @@ export function serializeProject(project: ProjectWithGallery): PublicProject {
     coverType: project.coverType,
     heroUrl: project.heroUrl,
     heroType: project.heroType,
+    posterUrl,
     published: project.published,
     sortOrder: project.sortOrder,
     gallery: project.gallery

@@ -20,6 +20,8 @@ export type PublicProject = {
   coverType: MediaType | null
   heroUrl: string | null
   heroType: MediaType | null
+  /** Derived CloudFront first-frame JPEG when cover is video. */
+  posterUrl: string | null
   published: boolean
   sortOrder: number
   gallery: PublicGalleryItem[]

@@ -34,6 +34,7 @@ export type ApiProject = {
   coverType: 'image' | 'video' | null
   heroUrl: string | null
   heroType: 'image' | 'video' | null
+  posterUrl?: string | null
   published: boolean
   sortOrder: number
   gallery: ApiGalleryItem[]
@@ -65,6 +66,7 @@ export function mapApiProject(p: ApiProject): Project {
     coverType: p.coverType,
     heroUrl: p.heroUrl,
     heroType: p.heroType,
+    posterUrl: p.posterUrl ?? null,
     gallery: p.gallery.map((g) => ({
       slot: g.slot as GallerySlot,
       mediaType: g.mediaType,

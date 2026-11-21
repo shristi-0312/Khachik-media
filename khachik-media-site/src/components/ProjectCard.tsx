@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { Project } from '../data/content'
 import { useBasePath } from '../hooks/useBasePath'
 import { videoPosterUrl } from '../media/cdn'
 import { FrameCorners } from './FrameCorners'
+import { VideoCover } from './VideoCover'
 import styles from './ProjectCard.module.css'
 
 type Props = {
@@ -24,7 +25,6 @@ function CoverMedia({
   project: Project
   playing: boolean
 }) {
-  const videoRef = useRef<HTMLVideoElement>(null)
   const isVideo =
     Boolean(project.coverUrl) &&
     (project.coverType === 'video' ||
@@ -35,51 +35,15 @@ function CoverMedia({
     (project.coverUrl ? videoPosterUrl(project.coverUrl) : null) ||
     undefined
 
-  // Only attach / preload the full MP4 once the visitor hovers (or plays).
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video || !isVideo || !playing || !project.coverUrl) return
-
-    if (video.src !== project.coverUrl) {
-      video.src = project.coverUrl
-      video.preload = 'auto'
-      video.load()
-    }
-    void video.play().catch(() => {})
-
-    return () => {
-      video.pause()
-      if (video.readyState >= 2) video.currentTime = 0
-    }
-  }, [playing, isVideo, project.coverUrl])
-
   if (!project.coverUrl && !poster) return null
 
-  if (isVideo) {
-    // Idle: poster image only — zero MP4 bytes until hover/play.
-    if (!playing) {
-      if (!poster) return null
-      return (
-        <img
-          className={styles.coverMedia}
-          src={poster}
-          alt=""
-          loading="lazy"
-          decoding="async"
-        />
-      )
-    }
-
+  if (isVideo && project.coverUrl) {
     return (
-      <video
-        ref={videoRef}
+      <VideoCover
+        videoUrl={project.coverUrl}
+        posterUrl={poster}
         className={styles.coverMedia}
-        poster={poster}
-        muted
-        loop
-        playsInline
-        preload="auto"
-        aria-hidden="true"
+        playing={playing}
       />
     )
   }
