@@ -27,7 +27,7 @@ pm2 save
 cd "$ROOT/khachik-media-admin"
 # Keep existing .env; only create a default if missing
 if [ ! -f .env ]; then
-  echo 'VITE_API_URL=https://65-2-150-121.sslip.io/api' > .env
+  echo 'VITE_API_URL=https://3-108-244-235.sslip.io/api' > .env
 fi
 
 npm ci

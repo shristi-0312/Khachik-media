@@ -51,7 +51,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     })
   } catch {
     throw new Error(
-      `Network error talking to ${API_URL}. Use https://65-2-150-121.sslip.io/admin and hard-refresh / re-login.`,
+      `Network error talking to ${API_URL}. Use https://3-108-244-235.sslip.io/admin and hard-refresh / re-login.`,
     )
   }
 

@@ -47,7 +47,7 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          VITE_API_URL: https://65-2-150-121.sslip.io/api
+          VITE_API_URL: https://3-108-244-235.sslip.io/api
 
   site:
     name: Build Site
@@ -65,4 +65,4 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          VITE_API_URL: https://65-2-150-121.sslip.io/api
+          VITE_API_URL: https://3-108-244-235.sslip.io/api

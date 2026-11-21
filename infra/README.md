@@ -95,8 +95,8 @@ Redeploy the site so the SPA fetches projects from the API.
 
 Add repository secrets:
 
-- `EC2_HOST` — Elastic IP or hostname (`65.2.150.121`)
-- `EC2_USER` — usually `ec2-user`
+- `EC2_HOST` — Elastic IP or hostname (`3.108.244.235`)
+- `EC2_USER` — usually `ubuntu`
 - `EC2_SSH_KEY` — private key contents
 - `EC2_SSH_PORT` — optional, default `22`
 

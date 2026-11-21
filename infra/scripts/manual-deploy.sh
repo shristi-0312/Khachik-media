@@ -3,12 +3,12 @@
 # Usage:
 #   ./infra/scripts/manual-deploy.sh /path/to/khachik.pem
 # Optional:
-#   EC2_HOST=65.2.150.121 EC2_USER=ec2-user ./infra/scripts/manual-deploy.sh ./khachik.pem
+#   EC2_HOST=3.108.244.235 EC2_USER=ubuntu ./infra/scripts/manual-deploy.sh ./deqoy.pem
 set -euo pipefail
 
 KEY="${1:-}"
-HOST="${EC2_HOST:-65.2.150.121}"
-USER="${EC2_USER:-ec2-user}"
+HOST="${EC2_HOST:-3.108.244.235}"
+USER="${EC2_USER:-ubuntu}"
 
 if [[ -z "$KEY" || ! -f "$KEY" ]]; then
   echo "Usage: $0 /path/to/ssh-private-key.pem"
@@ -28,5 +28,5 @@ bash infra/scripts/deploy-pm2.sh
 REMOTE
 
 echo "==> Done"
-echo "Admin: https://65-2-150-121.sslip.io/admin/"
-echo "API:   https://65-2-150-121.sslip.io/api/health"
+echo "Admin: https://3-108-244-235.sslip.io/admin/"
+echo "API:   https://3-108-244-235.sslip.io/api/health"
