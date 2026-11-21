@@ -64,10 +64,10 @@ export const ABOUT_LOVE_HEADLINE = [
  * Natural wrap only — do not force per-line breaks.
  */
 export const ABOUT_BODY: string[] = [
-  'Khachik Media is a production house for corporate events, artist events and short-form content. We help brands turn moments into stories their audience remembers and shares.',
-  'Our edge is how we work on the ground. We know how to put people at ease, from CEOs and performers to the crowd and the people around them. The result is footage that feels natural, warm and real, not staged. And because we’ve built our own audience online, every edit is shaped to hold attention from the first second.',
-  'Brands like Bluorng, Puma, New Balance, Pepsi Sri Lanka, Swiggy and Snitch, along with artists like Samay Raina, have trusted us to capture their biggest moments.',
-  'Whether it’s a launch, a live show or a content series, we bring the same promise: stories with heart, built to perform.',
+  'Khachik is a media production agency for events, artists and short-form content. We help brands turn moments into stories their audience remembers and shares.',
+  'Our edge is how we work on the ground. We know how to put people at ease, from CEOs and performers to the crowd and the people around them. And because we’ve built our own audience online, every edit is shaped to hold attention from the first second.',
+  'Brands like Netflix, Amazon Music, New Balance, Jack Daniels, Bluorng, Puma and Pepsi, along with artists like Ranveer Singh, Varun Dhawan, Samay Raina, MC Square, Seedhe Maut have trusted us to capture their biggest moments.',
+  'Whether it’s a launch, a live show or a content series, we bring the same promise: content that everyone would enjoy.',
 ]
 
 export const PROJECTS: Project[] = [

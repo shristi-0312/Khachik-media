@@ -38,7 +38,7 @@ const TILES: { span: 1 | 2; tall?: boolean }[] = [
 ]
 
 const INTRO =
-  'Khachik Media is a production house for corporate events, artist events and short-form content. We help brands turn moments into stories their audience remembers and shares.'
+  'Khachik is a media production agency for events, artists and short-form content. We help brands turn moments into stories their audience remembers and shares.'
 
 function displayKey(item: ApiMediaItem): string {
   return item.thumbUrl || stillDisplayUrl(item.url)
