@@ -66,6 +66,11 @@ export function VideoCover({ videoUrl, posterUrl, className, playing }: Props) {
         loading="lazy"
         decoding="async"
         onError={() => setPosterFailed(true)}
+        onLoad={(e) => {
+          // SPA hosts may 200 HTML for missing posters — treat non-images as failed.
+          const img = e.currentTarget
+          if (img.naturalWidth === 0) setPosterFailed(true)
+        }}
       />
     )
   }
@@ -74,7 +79,7 @@ export function VideoCover({ videoUrl, posterUrl, className, playing }: Props) {
   return (
     <video
       className={className}
-      src={videoUrl}
+      src={`${videoUrl}#t=0.1`}
       muted
       playsInline
       preload="metadata"
