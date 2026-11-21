@@ -2,10 +2,17 @@ import type { Category, GallerySlot, Project } from '../data/content'
 
 /** Production API fallback so Vercel builds still work if the env var is missing. */
 const DEFAULT_API_URL = 'https://3-108-244-235.sslip.io/api'
-const API_URL = (
-  (import.meta.env.VITE_API_URL as string | undefined)?.trim() ||
-  (import.meta.env.PROD ? DEFAULT_API_URL : '')
-).replace(/\/$/, '')
+
+/** Normalize VITE_API_URL — strip accidental `VITE_API_URL=` pastes and non-absolute values. */
+function resolveApiUrl(): string {
+  let raw = (import.meta.env.VITE_API_URL as string | undefined)?.trim() || ''
+  raw = raw.replace(/^VITE_API_URL=/i, '').trim().replace(/\/$/, '')
+  if (raw && !/^https?:\/\//i.test(raw)) raw = ''
+  if (!raw && import.meta.env.PROD) raw = DEFAULT_API_URL
+  return raw
+}
+
+const API_URL = resolveApiUrl()
 
 export type ApiGalleryItem = {
   slot: string

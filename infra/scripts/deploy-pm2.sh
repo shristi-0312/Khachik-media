@@ -34,6 +34,17 @@ npm ci
 npm run build
 sudo mkdir -p /var/www/html/admin
 sudo rsync -a --delete dist/ /var/www/html/admin/
+
+# --- Public site SPA (mirror; primary host is Vercel) ---
+cd "$ROOT/khachik-media-site"
+if [ ! -f .env ]; then
+  echo 'VITE_API_URL=https://3-108-244-235.sslip.io/api' > .env
+fi
+npm ci
+npm run build
+# Preserve /admin while syncing site assets to nginx root
+sudo rsync -a --delete --exclude admin/ dist/ /var/www/html/
+
 sudo nginx -t && sudo systemctl reload nginx
 
 curl -fsS http://127.0.0.1:4000/health

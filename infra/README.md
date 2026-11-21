@@ -90,7 +90,7 @@ In the Vercel project for `khachik-media-site`, set:
 VITE_API_URL=https://api.yourdomain.com
 ```
 
-Redeploy the site so the SPA fetches projects from the API.
+Value must be the absolute URL only (never paste `VITE_API_URL=` into the value field). Redeploy the site so the SPA fetches projects from the API. On EC2, keep `CORS_ORIGINS` including `https://www.khachikmedia.com` and `https://khachikmedia.com`.
 
 ## 6. GitHub Actions
 
